@@ -22,21 +22,17 @@ RUN uv pip install --system \
     chainlit \
     llama-index \
     llama-index-llms-openai \
-    llama-index-llms-anthropic \
     llama-index-embeddings-openai \
-    llama-index-embeddings-anthropic \
     chromadb \
     presidio-analyzer \
     presidio-anonymizer \
     spacy \
     openai \
-    anthropic \
     sqlalchemy \
     aiosqlite \
     langchain \
     langchain-community \
     langchain-openai \
-    langchain-anthropic \
     tiktoken
 
 # Download spaCy model for Presidio

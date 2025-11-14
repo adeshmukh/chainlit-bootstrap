@@ -17,44 +17,23 @@ analyzer = AnalyzerEngine()
 anonymizer = AnonymizerEngine()
 
 # Environment variables for LLM configuration
-GAI_MODEL_PROVIDER = os.getenv("GAI_MODEL_PROVIDER", "openai").lower()
+# Currently only OpenAI is supported
 DEFAULT_GAI_MODEL = os.getenv("DEFAULT_GAI_MODEL", "gpt-4o-mini")
 
-# Initialize LLM based on provider
-if GAI_MODEL_PROVIDER == "openai":
-    from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+# Initialize OpenAI LLM and embeddings
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    if not OPENAI_API_KEY:
-        raise ValueError("OPENAI_API_KEY environment variable is required when GAI_MODEL_PROVIDER=openai")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY environment variable is required")
 
-    llm = ChatOpenAI(
-        model_name=DEFAULT_GAI_MODEL,
-        temperature=0,
-        streaming=True,
-        openai_api_key=OPENAI_API_KEY,
-    )
-    embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
-elif GAI_MODEL_PROVIDER == "anthropic":
-    from langchain_anthropic import ChatAnthropic
-    from langchain_openai import OpenAIEmbeddings
-
-    ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Still need OpenAI for embeddings
-    if not ANTHROPIC_API_KEY:
-        raise ValueError("ANTHROPIC_API_KEY environment variable is required when GAI_MODEL_PROVIDER=anthropic")
-    if not OPENAI_API_KEY:
-        raise ValueError("OPENAI_API_KEY environment variable is required for embeddings")
-
-    llm = ChatAnthropic(
-        model=DEFAULT_GAI_MODEL,
-        temperature=0,
-        streaming=True,
-        anthropic_api_key=ANTHROPIC_API_KEY,
-    )
-    embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
-else:
-    raise ValueError(f"Unsupported GAI_MODEL_PROVIDER: {GAI_MODEL_PROVIDER}. Must be 'openai' or 'anthropic'")
+llm = ChatOpenAI(
+    model_name=DEFAULT_GAI_MODEL,
+    temperature=0,
+    streaming=True,
+    openai_api_key=OPENAI_API_KEY,
+)
+embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
 

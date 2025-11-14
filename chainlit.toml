@@ -5,7 +5,6 @@ enable_telemetry = false
 # List of environment variables to be provided by each user to use the app.
 user_env = [
     "OPENAI_API_KEY",
-    "ANTHROPIC_API_KEY",
 ]
 
 [features]
