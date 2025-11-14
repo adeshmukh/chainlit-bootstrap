@@ -17,12 +17,13 @@ help:
 	@echo "  clean      - Clean build artifacts and caches"
 
 # Create virtual environment if it doesn't exist
+# Use Python 3.12 explicitly (Python 3.14 not supported by onnxruntime/chromadb)
 venv:
 	@if [ ! -d ".venv" ]; then \
-		echo "Creating virtual environment..."; \
-		uv venv; \
+		echo "Creating virtual environment with Python 3.12..."; \
+		uv venv --python python3.12 || uv venv --python 3.12; \
 	else \
-		echo "Virtual environment already exists."; \
+		echo "Virtual environment already exists. Delete .venv to recreate with Python 3.12."; \
 	fi
 
 # Install/sync dependencies (depends on venv)

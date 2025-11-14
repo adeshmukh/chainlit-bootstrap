@@ -2,7 +2,7 @@
 name = "learn-chainlit"
 version = "0.1.0"
 description = "A Chainlit starter application with voice input, document QA, and PII security"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.14"
 authors = [
     {name = "Chainlit Starter", email = "starter@example.com"}
 ]
