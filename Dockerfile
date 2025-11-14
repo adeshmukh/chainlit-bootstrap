@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv
-RUN pip install --no-cache-dir uv
+RUN pip install --no-cache-dir --root-user-action=ignore uv
 
 # Copy dependency files first for better caching
 COPY pyproject.toml ./
@@ -49,6 +49,7 @@ EXPOSE 8000
 ENV PYTHONUNBUFFERED=1
 ENV CHAINLIT_HOST=0.0.0.0
 ENV CHAINLIT_PORT=8000
+ENV PIP_ROOT_USER_ACTION=ignore
 
 # Run Chainlit application
 CMD ["chainlit", "run", "app.py", "--host", "0.0.0.0", "--port", "8000"]
