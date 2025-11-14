@@ -12,11 +12,11 @@ try:
         "nlp_engine_name": "spacy",
         "models": [{"lang_code": "en", "model_name": "en_core_web_sm"}],
     }
-    
+
     # Initialize NLP engine provider
     provider = NlpEngineProvider(nlp_configuration=nlp_configuration)
     nlp_engine = provider.create_engine()
-    
+
     # Initialize Presidio analyzer with the configured NLP engine
     analyzer = AnalyzerEngine(nlp_engine=nlp_engine)
 except (OSError, Exception) as e:

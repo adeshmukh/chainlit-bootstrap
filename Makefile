@@ -45,7 +45,10 @@ install sync: venv
 		langchain-community \
 		langchain-openai \
 		langchain-text-splitters \
-		tiktoken
+		tiktoken \
+		ruff \
+		pytest \
+		pytest-asyncio
 
 # Lint code (depends on install)
 lint: install
