@@ -11,22 +11,8 @@ from .llm import embeddings, llm, text_splitter
 from .pii import anonymize_text
 
 
-@cl.on_chat_start
-async def on_chat_start():
-    """Initialize chat session and handle document upload."""
-    files = None
-
-    # Wait for the user to upload a file
-    while files is None:
-        files = await cl.AskFileMessage(
-            content="Please upload a text file to begin!",
-            accept=["text/plain", "application/pdf"],
-            max_size_mb=20,
-            timeout=180,
-        ).send()
-
-    file = files[0]
-
+async def _process_file(file: cl.File) -> bool:
+    """Process an uploaded file and set up the chain. Returns True if successful."""
     msg = cl.Message(content=f"Processing `{file.name}`...")
     await msg.send()
 
@@ -39,7 +25,7 @@ async def on_chat_start():
         await cl.Message(
             content=f"Error: Could not read file `{file.name}`. Please ensure it's a text file."
         ).send()
-        return
+        return False
 
     # Split the text into chunks
     texts = text_splitter.split_text(text)
@@ -76,16 +62,38 @@ async def on_chat_start():
 
     cl.user_session.set("chain", chain)
     cl.user_session.set("file_name", file.name)
+    return True
+
+
+@cl.on_chat_start
+async def on_chat_start():
+    """Initialize chat session."""
+    # Show welcome message asking for file upload
+    await cl.Message(
+        content="👋 Welcome! Please upload a text file using the file upload button to begin asking questions about your document."
+    ).send()
 
 
 @cl.on_message
 async def main(message: cl.Message):
     """Handle incoming messages with PII detection and document QA."""
+    # Check if message has file attachments
+    if message.elements:
+        for element in message.elements:
+            if isinstance(element, cl.File):
+                # Process the uploaded file
+                success = await _process_file(element)
+                if success:
+                    await cl.Message(
+                        content="File processed successfully! You can now ask questions about the document."
+                    ).send()
+                return
+    
     chain = cl.user_session.get("chain")  # type: Optional[ConversationalRetrievalChain]
 
     if not chain:
         await cl.Message(
-            content="Please upload a document first using the file upload button."
+            content="Please upload a document first using the file upload button (📎 icon) to begin asking questions."
         ).send()
         return
 
