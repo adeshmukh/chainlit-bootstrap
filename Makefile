@@ -88,8 +88,7 @@ download-spacy-model:
 	@echo "Downloading spaCy model wheel to .local/cache/spacy-models/..."
 	@mkdir -p .local/cache/spacy-models
 	@if command -v python3 >/dev/null 2>&1; then \
-		python3 -m pip download en_core_web_sm -d .local/cache/spacy-models/ || \
-		pip download en_core_web_sm -d .local/cache/spacy-models/ || \
+		python3 scripts/download-spacy-model.py || \
 		(echo "Warning: Could not download model wheel. Docker will download during build." && exit 1); \
 	else \
 		echo "Error: python3 not found. Cannot download model wheel." && exit 1; \
