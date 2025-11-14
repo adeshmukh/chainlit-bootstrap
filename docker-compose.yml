@@ -19,6 +19,10 @@ services:
       - CHAINLIT_HOST=0.0.0.0
       - CHAINLIT_PORT=8000
       - DATABASE_URL=sqlite+aiosqlite:///./data/chainlit.db
+      # Google OAuth credentials (can be overridden via .env file)
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - OAUTH_REDIRECT_URI=${OAUTH_REDIRECT_URI:-}
     command: chainlit run app.py --host 0.0.0.0 --port 8000 --watch
     restart: unless-stopped
     healthcheck:

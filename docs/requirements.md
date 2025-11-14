@@ -41,7 +41,11 @@ This project is a Chainlit-based conversational AI application that enables user
 ### 4. Authentication
 - **Status**: ✅ Configured
 - **Description**: Google OAuth authentication enabled
-- **Configuration**: Set in `chainlit.toml` with `provider = "google"`
+- **Configuration**: 
+  - Set in `chainlit.toml` with `provider = "google"`
+  - Requires environment variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `OAUTH_REDIRECT_URI`
+  - OAuth callback handler in `learn_chainlit/auth.py` allows all authenticated Google users
+  - Can be customized to restrict access by domain or other criteria
 
 ### 5. File Upload
 - **Status**: ✅ Implemented
@@ -61,6 +65,9 @@ This project is a Chainlit-based conversational AI application that enables user
 
 ### Required Environment Variables
 - `OPENAI_API_KEY`: OpenAI API key for LLM and embeddings (required)
+- `GOOGLE_CLIENT_ID`: Google OAuth client ID (required for authentication)
+- `GOOGLE_CLIENT_SECRET`: Google OAuth client secret (required for authentication)
+- `OAUTH_REDIRECT_URI`: OAuth redirect URI for Google authentication (required for authentication)
 
 ### Optional Environment Variables
 - `DEFAULT_GAI_MODEL`: LLM model name (default: `gpt-4o-mini`)
