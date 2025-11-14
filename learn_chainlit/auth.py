@@ -1,17 +1,25 @@
 """Google OAuth authentication configuration for Chainlit."""
 
 import os
+import secrets
 from typing import Dict, Optional
 
 import chainlit as cl
 
 
 def configure_google_oauth():
-    """Configure Google OAuth environment variables from custom names to Chainlit's expected names."""
+    """
+    Configure Google OAuth environment variables from custom names to Chainlit's expected names.
+    
+    Also ensures CHAINLIT_AUTH_SECRET is set, which is required for authentication to work.
+    """
     # Map user-provided environment variables to Chainlit's expected names
     google_client_id = os.getenv("GOOGLE_CLIENT_ID")
     google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
     oauth_redirect_uri = os.getenv("OAUTH_REDIRECT_URI")
+
+    # Check if OAuth credentials are provided
+    has_oauth_creds = bool(google_client_id and google_client_secret and oauth_redirect_uri)
 
     if google_client_id:
         os.environ["OAUTH_GOOGLE_CLIENT_ID"] = google_client_id
@@ -19,6 +27,31 @@ def configure_google_oauth():
         os.environ["OAUTH_GOOGLE_CLIENT_SECRET"] = google_client_secret
     if oauth_redirect_uri:
         os.environ["OAUTH_REDIRECT_URI"] = oauth_redirect_uri
+
+    # CHAINLIT_AUTH_SECRET is required for authentication to work
+    # If not set, generate a random secret (for development only)
+    # In production, this should be set explicitly via environment variable
+    if not os.getenv("CHAINLIT_AUTH_SECRET"):
+        # Generate a secure random secret
+        auth_secret = secrets.token_urlsafe(32)
+        os.environ["CHAINLIT_AUTH_SECRET"] = auth_secret
+        if has_oauth_creds:
+            print(
+                "WARNING: CHAINLIT_AUTH_SECRET was not set. Generated a random secret. "
+                "For production, set CHAINLIT_AUTH_SECRET explicitly."
+            )
+
+    # Warn if OAuth credentials are missing but authentication is enabled
+    if not has_oauth_creds:
+        print(
+            "WARNING: Google OAuth credentials (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, "
+            "OAUTH_REDIRECT_URI) are not set. Authentication will not be enforced. "
+            "Set these environment variables to enable Google OAuth authentication."
+        )
+
+
+# Configure OAuth before the decorator is evaluated
+configure_google_oauth()
 
 
 @cl.oauth_callback

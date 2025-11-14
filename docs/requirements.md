@@ -68,6 +68,7 @@ This project is a Chainlit-based conversational AI application that enables user
 - `GOOGLE_CLIENT_ID`: Google OAuth client ID (required for authentication)
 - `GOOGLE_CLIENT_SECRET`: Google OAuth client secret (required for authentication)
 - `OAUTH_REDIRECT_URI`: OAuth redirect URI for Google authentication (required for authentication)
+- `CHAINLIT_AUTH_SECRET`: Secret key for signing authentication tokens (required for authentication). Generate with `chainlit create-secret` or it will be auto-generated (not recommended for production)
 
 ### Optional Environment Variables
 - `DEFAULT_GAI_MODEL`: LLM model name (default: `gpt-4o-mini`)

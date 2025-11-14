@@ -8,6 +8,7 @@ user_env = [
     "GOOGLE_CLIENT_ID",
     "GOOGLE_CLIENT_SECRET",
     "OAUTH_REDIRECT_URI",
+    "CHAINLIT_AUTH_SECRET",
 ]
 
 [features]
