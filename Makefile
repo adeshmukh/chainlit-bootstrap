@@ -27,10 +27,25 @@ venv:
 	fi
 
 # Install/sync dependencies (depends on venv)
-# uv pip install with explicit Python path to ensure it uses the venv
+# Install dependencies directly from pyproject.toml (don't install project itself)
 install sync: venv
 	@echo "Installing dependencies into virtual environment..."
-	uv pip install --python .venv/bin/python .
+	uv pip install --python .venv/bin/python \
+		chainlit \
+		llama-index \
+		llama-index-llms-openai \
+		llama-index-embeddings-openai \
+		chromadb \
+		presidio-analyzer \
+		presidio-anonymizer \
+		spacy \
+		openai \
+		sqlalchemy \
+		aiosqlite \
+		langchain \
+		langchain-community \
+		langchain-openai \
+		tiktoken
 
 # Lint code (depends on install)
 lint: install
