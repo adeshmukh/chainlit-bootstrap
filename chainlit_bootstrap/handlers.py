@@ -68,32 +68,68 @@ async def _process_file(file: cl.File) -> bool:
 @cl.on_chat_start
 async def on_chat_start():
     """Initialize chat session."""
+    # Check if chain already exists (session resume - though chains don't persist across sessions)
+    # This is mainly for same-session scenarios
+    chain = cl.user_session.get("chain")
+    if chain:
+        file_name = cl.user_session.get("file_name", "document")
+        await cl.Message(
+            content=f"👋 Welcome back! You can continue asking questions about `{file_name}`."
+        ).send()
+        return
+    
     # Show welcome message asking for file upload
     await cl.Message(
-        content="👋 Welcome! Please upload a text file using the file upload button to begin asking questions about your document."
+        content="👋 Welcome! Please upload a text file using the file upload button (📎) to begin asking questions about your document. You can attach the file to your message or upload it separately."
     ).send()
 
 
 @cl.on_message
 async def main(message: cl.Message):
     """Handle incoming messages with PII detection and document QA."""
-    # Check if message has file attachments
+    # Check if message has file attachments (priority: process files first)
+    files_processed = False
     if message.elements:
         for element in message.elements:
             if isinstance(element, cl.File):
                 # Process the uploaded file
                 success = await _process_file(element)
                 if success:
+                    files_processed = True
+                    # Verify chain was set
+                    chain_check = cl.user_session.get("chain")
+                    if chain_check:
+                        await cl.Message(
+                            content="✅ File processed successfully! You can now ask questions about the document."
+                        ).send()
+                    else:
+                        await cl.Message(
+                            content="⚠️ File was processed but chain was not set. Please try uploading again."
+                        ).send()
+                else:
                     await cl.Message(
-                        content="File processed successfully! You can now ask questions about the document."
+                        content="❌ Failed to process the file. Please ensure it's a valid text file and try again."
                     ).send()
+                # Return after processing file, even if there's text in the message
+                # User should send a new message to ask questions
                 return
     
+    # If no files were found in elements, check if message content is empty
+    # This handles the case where user might have uploaded file separately
+    if not message.content or message.content.strip() == "":
+        chain = cl.user_session.get("chain")
+        if not chain:
+            await cl.Message(
+                content="Please upload a document first using the file upload button (📎 icon). Attach the file to your message to process it."
+            ).send()
+        return
+    
+    # Get chain for processing the question
     chain = cl.user_session.get("chain")  # type: Optional[ConversationalRetrievalChain]
 
     if not chain:
         await cl.Message(
-            content="Please upload a document first using the file upload button (📎 icon) to begin asking questions."
+            content="Please upload a document first using the file upload button (📎 icon) to begin asking questions. Attach the file to your message."
         ).send()
         return
 
