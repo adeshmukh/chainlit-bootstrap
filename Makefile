@@ -81,8 +81,14 @@ dev:
 
 # Clean build artifacts
 clean:
-	rm -rf __pycache__ .pytest_cache .ruff_cache .coverage htmlcov dist build *.egg-info .venv
-	find . -type d -name __pycache__ -exec rm -r {} + 2>/dev/null || true
-	find . -type f -name "*.pyc" -delete
+	rm -rf .pytest_cache .ruff_cache .coverage htmlcov dist build *.egg-info .venv 2>/dev/null || true
+	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+	find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	# Try to remove __pycache__ with sudo if permission denied
+	@if [ -d __pycache__ ]; then \
+		sudo rm -rf __pycache__ 2>/dev/null || \
+		docker run --rm -v "$$(pwd):/app" -w /app python:3.12-slim rm -rf __pycache__ 2>/dev/null || \
+		echo "Warning: Could not remove __pycache__ (may need manual cleanup)"; \
+	fi
 	docker-compose down -v || true
 
