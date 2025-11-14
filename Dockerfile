@@ -28,6 +28,7 @@ RUN uv pip install --system \
     sqlalchemy \
     aiosqlite \
     langchain \
+    langchain-classic \
     langchain-community \
     langchain-openai \
     langchain-text-splitters \

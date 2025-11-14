@@ -40,6 +40,7 @@ install sync: venv
 		sqlalchemy \
 		aiosqlite \
 		langchain \
+		langchain-classic \
 		langchain-community \
 		langchain-openai \
 		langchain-text-splitters \
@@ -80,7 +81,7 @@ dev:
 
 # Clean build artifacts
 clean:
-	rm -rf __pycache__ .pytest_cache .ruff_cache .coverage htmlcov dist build *.egg-info
+	rm -rf __pycache__ .pytest_cache .ruff_cache .coverage htmlcov dist build *.egg-info .venv
 	find . -type d -name __pycache__ -exec rm -r {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete
 	docker-compose down -v || true

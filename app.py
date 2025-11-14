@@ -6,10 +6,8 @@ from typing import Optional
 import chainlit as cl
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
-from langchain.chains.conversational_retrieval.base import (
-    ConversationalRetrievalChain,
-)
-from langchain.memory import ConversationBufferMemory
+from langchain_classic.chains import ConversationalRetrievalChain
+from langchain_classic.memory import ConversationBufferMemory
 from langchain_community.chat_message_histories import ChatMessageHistory
 from presidio_analyzer import AnalyzerEngine
 from presidio_anonymizer import AnonymizerEngine
@@ -163,13 +161,13 @@ async def main(message: cl.Message):
 
 
 @cl.on_audio_chunk
-async def on_audio_chunk(audio_chunk: cl.AudioChunk):
+async def on_audio_chunk(audio_chunk):
     """Handle real-time audio chunks for voice input."""
     # TODO: Implement OpenAI Realtime API integration
     # For now, this is a placeholder that acknowledges audio input
-    if audio_chunk.isStart:
+    if hasattr(audio_chunk, "isStart") and audio_chunk.isStart:
         await cl.Message(content="🎤 Listening...").send()
-    elif audio_chunk.isEnd:
+    elif hasattr(audio_chunk, "isEnd") and audio_chunk.isEnd:
         # In a full implementation, you would:
         # 1. Send accumulated audio to OpenAI Realtime API
         # 2. Get transcription and response
