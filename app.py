@@ -67,6 +67,24 @@ def configure_auth_mode():
 # Configure auth mode before importing Chainlit modules
 configure_auth_mode()
 
+# Import Chainlit to configure data layer
+import chainlit as cl
+from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
+
+# Configure data layer for persistent sessions (threads sidebar)
+# This uses SQLite with aiosqlite for thread storage
+@cl.data_layer
+def get_data_layer():
+    # Ensure data directory exists
+    data_dir = Path(__file__).parent / "data"
+    data_dir.mkdir(exist_ok=True)
+    
+    # Use SQLite database for thread persistence
+    db_path = data_dir / "chainlit.db"
+    conninfo = f"sqlite+aiosqlite:///{db_path}"
+    
+    return SQLAlchemyDataLayer(conninfo=conninfo)
+
 # Import handlers to register them with Chainlit
 # OAuth configuration happens automatically when auth module is imported
 from chainlit_bootstrap import handlers  # noqa: F401

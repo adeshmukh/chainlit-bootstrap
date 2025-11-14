@@ -26,7 +26,7 @@ process_math = true
 # See https://docs.chainlit.io/authentication/overview
 [features.authentication]
 # Enable authentication
-enabled = true
+enabled = false
 # Provider: "google", "github", "azure-ad", "okta", "auth0", "generic-oauth"
 provider = "google"
 
