@@ -13,14 +13,16 @@ def configure_google_oauth():
     
     Also ensures CHAINLIT_AUTH_SECRET is set, which is required for authentication to work.
     """
-    # Map user-provided environment variables to Chainlit's expected names
-    google_client_id = os.getenv("GOOGLE_CLIENT_ID")
-    google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+    # Chainlit expects OAUTH_GOOGLE_CLIENT_ID and OAUTH_GOOGLE_CLIENT_SECRET directly
+    # Check for Chainlit's expected names first, then fall back to custom names for backward compatibility
+    google_client_id = os.getenv("OAUTH_GOOGLE_CLIENT_ID") or os.getenv("GOOGLE_CLIENT_ID")
+    google_client_secret = os.getenv("OAUTH_GOOGLE_CLIENT_SECRET") or os.getenv("GOOGLE_CLIENT_SECRET")
     oauth_redirect_uri = os.getenv("OAUTH_REDIRECT_URI")
 
     # Check if OAuth credentials are provided
     has_oauth_creds = bool(google_client_id and google_client_secret and oauth_redirect_uri)
 
+    # Ensure Chainlit's expected environment variables are set
     if google_client_id:
         os.environ["OAUTH_GOOGLE_CLIENT_ID"] = google_client_id
     if google_client_secret:
@@ -44,9 +46,9 @@ def configure_google_oauth():
     # Warn if OAuth credentials are missing but authentication is enabled
     if not has_oauth_creds:
         print(
-            "WARNING: Google OAuth credentials (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, "
-            "OAUTH_REDIRECT_URI) are not set. Authentication will not be enforced. "
-            "Set these environment variables to enable Google OAuth authentication."
+            "WARNING: Google OAuth credentials (OAUTH_GOOGLE_CLIENT_ID or GOOGLE_CLIENT_ID, "
+            "OAUTH_GOOGLE_CLIENT_SECRET or GOOGLE_CLIENT_SECRET, OAUTH_REDIRECT_URI) are not set. "
+            "Authentication will not be enforced. Set these environment variables to enable Google OAuth authentication."
         )
 
 

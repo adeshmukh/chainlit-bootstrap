@@ -5,8 +5,8 @@ enable_telemetry = false
 # List of environment variables to be provided by each user to use the app.
 user_env = [
     "OPENAI_API_KEY",
-    "GOOGLE_CLIENT_ID",
-    "GOOGLE_CLIENT_SECRET",
+    "OAUTH_GOOGLE_CLIENT_ID",
+    "OAUTH_GOOGLE_CLIENT_SECRET",
     "OAUTH_REDIRECT_URI",
     "CHAINLIT_AUTH_SECRET",
 ]

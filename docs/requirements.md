@@ -43,7 +43,7 @@ This project is a Chainlit-based conversational AI application that enables user
 - **Description**: Google OAuth authentication enabled
 - **Configuration**: 
   - Set in `chainlit.toml` with `provider = "google"`
-  - Requires environment variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `OAUTH_REDIRECT_URI`
+  - Requires environment variables: `OAUTH_GOOGLE_CLIENT_ID`, `OAUTH_GOOGLE_CLIENT_SECRET`, `OAUTH_REDIRECT_URI`
   - OAuth callback handler in `chainlit_bootstrap/auth.py` allows all authenticated Google users
   - Can be customized to restrict access by domain or other criteria
 
@@ -65,8 +65,8 @@ This project is a Chainlit-based conversational AI application that enables user
 
 ### Required Environment Variables
 - `OPENAI_API_KEY`: OpenAI API key for LLM and embeddings (required)
-- `GOOGLE_CLIENT_ID`: Google OAuth client ID (required for authentication)
-- `GOOGLE_CLIENT_SECRET`: Google OAuth client secret (required for authentication)
+- `OAUTH_GOOGLE_CLIENT_ID`: Google OAuth client ID (required for authentication)
+- `OAUTH_GOOGLE_CLIENT_SECRET`: Google OAuth client secret (required for authentication)
 - `OAUTH_REDIRECT_URI`: OAuth redirect URI for Google authentication (required for authentication)
 - `CHAINLIT_AUTH_SECRET`: Secret key for signing authentication tokens (required for authentication). Generate with `chainlit create-secret` or it will be auto-generated (not recommended for production)
 
