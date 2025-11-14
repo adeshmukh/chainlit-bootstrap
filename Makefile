@@ -71,7 +71,12 @@ build:
 	@docker-compose build
 
 # Start services
+# Clean up any existing containers first to avoid ContainerConfig errors
 up:
+	@echo "Cleaning up any existing containers..."
+	@docker-compose down 2>/dev/null || true
+	@docker rm -f chainlit-app 2>/dev/null || true
+	@echo "Starting services..."
 	docker-compose up -d
 
 # Stop services
@@ -79,7 +84,12 @@ down:
 	docker-compose down
 
 # Start dev container with hot reload
+# Clean up any existing containers first to avoid ContainerConfig errors
 dev:
+	@echo "Cleaning up any existing containers..."
+	@docker-compose down 2>/dev/null || true
+	@docker rm -f chainlit-app 2>/dev/null || true
+	@echo "Starting dev container..."
 	docker-compose up
 
 # Download spaCy model wheel for Docker caching

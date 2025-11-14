@@ -19,6 +19,7 @@ services:
       - CHAINLIT_HOST=0.0.0.0
       - CHAINLIT_PORT=8000
       - DATABASE_URL=sqlite+aiosqlite:///./data/chainlit.db
+      - CHAINLIT_DATA_LAYER=sqlalchemy
       # Google OAuth credentials (can be overridden via .env file)
       - OAUTH_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID:-}
       - OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET:-}
