@@ -115,7 +115,7 @@ Stream Response to User
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd learn-chainlit
+   cd chainlit-bootstrap
    ```
 
 2. **Create virtual environment**
@@ -198,7 +198,7 @@ make clean
 ### Project Structure
 
 ```
-learn-chainlit/
+chainlit-bootstrap/
 ├── app.py                 # Main application entry point
 ├── chainlit.toml          # Chainlit configuration
 ├── pyproject.toml         # Python project metadata and dependencies

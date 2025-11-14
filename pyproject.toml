@@ -1,5 +1,5 @@
 [project]
-name = "learn-chainlit"
+name = "chainlit-bootstrap"
 version = "0.1.0"
 description = "A Chainlit starter application with voice input, document QA, and PII security"
 requires-python = ">=3.12,<3.14"
@@ -37,7 +37,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["learn_chainlit"]
+packages = ["chainlit_bootstrap"]
 
 [tool.ruff]
 line-length = 88
@@ -65,5 +65,5 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.ruff.lint.isort]
-known-first-party = ["chainlit", "learn_chainlit"]
+known-first-party = ["chainlit", "chainlit_bootstrap"]
 

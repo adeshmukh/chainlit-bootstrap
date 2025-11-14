@@ -44,7 +44,7 @@ This project is a Chainlit-based conversational AI application that enables user
 - **Configuration**: 
   - Set in `chainlit.toml` with `provider = "google"`
   - Requires environment variables: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `OAUTH_REDIRECT_URI`
-  - OAuth callback handler in `learn_chainlit/auth.py` allows all authenticated Google users
+  - OAuth callback handler in `chainlit_bootstrap/auth.py` allows all authenticated Google users
   - Can be customized to restrict access by domain or other criteria
 
 ### 5. File Upload
