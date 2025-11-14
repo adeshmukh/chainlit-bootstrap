@@ -20,9 +20,6 @@ COPY pyproject.toml ./
 # Install all dependencies listed in pyproject.toml
 RUN uv pip install --system \
     chainlit \
-    llama-index \
-    llama-index-llms-openai \
-    llama-index-embeddings-openai \
     chromadb \
     presidio-analyzer \
     presidio-anonymizer \
@@ -33,6 +30,7 @@ RUN uv pip install --system \
     langchain \
     langchain-community \
     langchain-openai \
+    langchain-text-splitters \
     tiktoken
 
 # Download spaCy model for Presidio

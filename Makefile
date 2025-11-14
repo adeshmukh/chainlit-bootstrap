@@ -32,9 +32,6 @@ install sync: venv
 	@echo "Installing dependencies into virtual environment..."
 	uv pip install --python .venv/bin/python \
 		chainlit \
-		llama-index \
-		llama-index-llms-openai \
-		llama-index-embeddings-openai \
 		chromadb \
 		presidio-analyzer \
 		presidio-anonymizer \
@@ -45,6 +42,7 @@ install sync: venv
 		langchain \
 		langchain-community \
 		langchain-openai \
+		langchain-text-splitters \
 		tiktoken
 
 # Lint code (depends on install)
