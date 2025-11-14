@@ -8,7 +8,8 @@
 .LSOverride
 
 # Icon must end with two \r
-Icon
+Icon
+
 
 # Thumbnails
 ._*
@@ -215,3 +216,21 @@ pyrightconfig.json
 # End of https://www.toptal.com/developers/gitignore/api/nodejs
 
 .local/
+
+# Chainlit
+.chainlit/
+chainlit.db
+chainlit.db-journal
+*.db
+*.db-journal
+
+# ChromaDB
+chroma_db/
+chroma/
+
+# Data directories
+data/
+storage/
+
+# Docker volumes
+*.log
