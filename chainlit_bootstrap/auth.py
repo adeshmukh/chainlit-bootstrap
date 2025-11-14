@@ -7,12 +7,28 @@ from typing import Dict, Optional
 import chainlit as cl
 
 
+def is_no_login_mode() -> bool:
+    """
+    Check if no-login mode is enabled via CHAINLIT_NO_LOGIN environment variable.
+    
+    Returns:
+        True if no-login mode is enabled, False otherwise
+    """
+    no_login = os.getenv("CHAINLIT_NO_LOGIN", "").strip().lower()
+    return bool(no_login and no_login not in ("0", "false", "no", ""))
+
+
 def configure_google_oauth():
     """
     Configure Google OAuth environment variables from custom names to Chainlit's expected names.
 
     Also ensures CHAINLIT_AUTH_SECRET is set, which is required for authentication to work.
     """
+    # Skip OAuth configuration if no-login mode is enabled
+    if is_no_login_mode():
+        print("INFO: No-login mode enabled. Skipping OAuth configuration.")
+        return
+
     # Chainlit expects OAUTH_GOOGLE_CLIENT_ID and OAUTH_GOOGLE_CLIENT_SECRET directly
     # Check for Chainlit's expected names first, then fall back to custom names for backward compatibility
     google_client_id = os.getenv("OAUTH_GOOGLE_CLIENT_ID") or os.getenv(
@@ -62,32 +78,49 @@ def configure_google_oauth():
 configure_google_oauth()
 
 
-@cl.oauth_callback
-def oauth_callback(
-    provider_id: str,
-    token: str,
-    raw_user_data: Dict[str, str],
-    default_user: cl.User,
-) -> Optional[cl.User]:
-    """
-    OAuth callback handler for Google authentication.
+# Only register OAuth callback if no-login mode is not enabled
+if not is_no_login_mode():
 
-    This function is called after a user successfully authenticates with Google.
-    By default, it allows all authenticated Google users to access the app.
+    @cl.oauth_callback
+    def oauth_callback(
+        provider_id: str,
+        token: str,
+        raw_user_data: Dict[str, str],
+        default_user: cl.User,
+    ) -> Optional[cl.User]:
+        """
+        OAuth callback handler for Google authentication.
 
-    Args:
-        provider_id: The OAuth provider identifier (e.g., "google")
-        token: The OAuth token received from the provider
-        raw_user_data: User information returned by the provider
-        default_user: A cl.User object created by Chainlit
+        This function is called after a user successfully authenticates with Google.
+        By default, it allows all authenticated Google users to access the app.
 
-    Returns:
-        A cl.User object if authentication is successful, None otherwise
-    """
-    if provider_id == "google":
-        # Allow all authenticated Google users
-        # You can customize this to restrict access, e.g., by domain:
-        # if raw_user_data.get("hd") == "example.org":
-        #     return default_user
-        return default_user
-    return None
+        Args:
+            provider_id: The OAuth provider identifier (e.g., "google")
+            token: The OAuth token received from the provider
+            raw_user_data: User information returned by the provider
+            default_user: A cl.User object created by Chainlit
+
+        Returns:
+            A cl.User object if authentication is successful, None otherwise
+        """
+        if provider_id == "google":
+            # Allow all authenticated Google users
+            # You can customize this to restrict access, e.g., by domain:
+            # if raw_user_data.get("hd") == "example.org":
+            #     return default_user
+            return default_user
+        return None
+
+else:
+    # No-login mode: create a dummy oauth_callback function that won't be registered
+    def oauth_callback(
+        provider_id: str,
+        token: str,
+        raw_user_data: Dict[str, str],
+        default_user: cl.User,
+    ) -> Optional[cl.User]:
+        """
+        Dummy OAuth callback for no-login mode.
+        This function is not registered with Chainlit when no-login mode is enabled.
+        """
+        return None

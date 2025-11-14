@@ -40,12 +40,16 @@ This project is a Chainlit-based conversational AI application that enables user
 
 ### 4. Authentication
 - **Status**: ✅ Configured
-- **Description**: Google OAuth authentication enabled
+- **Description**: Google OAuth authentication enabled (can be bypassed in dev mode)
 - **Configuration**: 
   - Set in `chainlit.toml` with `provider = "google"`
   - Requires environment variables: `OAUTH_GOOGLE_CLIENT_ID`, `OAUTH_GOOGLE_CLIENT_SECRET`, `OAUTH_REDIRECT_URI`
   - OAuth callback handler in `chainlit_bootstrap/auth.py` allows all authenticated Google users
   - Can be customized to restrict access by domain or other criteria
+- **No-Login Mode**: 
+  - Set `CHAINLIT_NO_LOGIN` environment variable to any non-empty value (e.g., `1`, `true`) to bypass authentication
+  - Useful for development and automated testing
+  - When enabled, authentication is disabled in `chainlit.toml` and OAuth setup is skipped
 
 ### 5. File Upload
 - **Status**: ✅ Implemented
@@ -74,6 +78,7 @@ This project is a Chainlit-based conversational AI application that enables user
 - `DEFAULT_GAI_MODEL`: LLM model name (default: `gpt-4o-mini`)
 - `CHAINLIT_PORT`: Port for Chainlit server (default: `8000`)
 - `CHAINLIT_HOST`: Host for Chainlit server (default: `0.0.0.0`)
+- `CHAINLIT_NO_LOGIN`: Set to any non-empty value (e.g., `1`, `true`) to bypass authentication in dev mode. Useful for testing and development. Authentication is enabled by default.
 
 ## Current Limitations and Future Enhancements
 

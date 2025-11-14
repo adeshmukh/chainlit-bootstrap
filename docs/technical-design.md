@@ -98,7 +98,7 @@ Stream Response to User
 
 4. **Security Layer**
    - PII detection on both input and output
-   - Google OAuth authentication
+   - Google OAuth authentication (can be bypassed in dev mode via `CHAINLIT_NO_LOGIN`)
 
 ## Developer Quickstart
 
@@ -142,6 +142,8 @@ Stream Response to User
    # Optional:
    export DEFAULT_GAI_MODEL="gpt-4o-mini"
    export CHAINLIT_PORT=8000
+   # To bypass authentication in dev mode:
+   export CHAINLIT_NO_LOGIN=1
    ```
 
 6. **Run the application**
@@ -234,6 +236,7 @@ OPENAI_API_KEY=sk-...
 DEFAULT_GAI_MODEL=gpt-4o-mini  # Optional
 CHAINLIT_PORT=8000              # Optional
 CHAINLIT_HOST=0.0.0.0           # Optional
+CHAINLIT_NO_LOGIN=1             # Optional: bypass authentication in dev mode
 ```
 
 ### Common Development Tasks
@@ -246,6 +249,7 @@ CHAINLIT_HOST=0.0.0.0           # Optional
 #### Modifying Chainlit Configuration
 - Edit `chainlit.toml`
 - Restart the application for changes to take effect
+- Note: `CHAINLIT_NO_LOGIN` environment variable programmatically modifies `chainlit.toml` to disable authentication when set
 
 #### Debugging
 - Chainlit provides built-in debugging UI
