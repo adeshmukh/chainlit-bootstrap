@@ -268,15 +268,19 @@ async def _respond_with_web_search(query: str) -> None:
 @cl.on_chat_start
 async def on_chat_start():
     """Initialize chat session and ensure database is initialized."""
-    # Force enable audio feature (workaround for Chainlit config bug)
+    # Log audio config state for debugging (config should already be set via TOML)
     try:
         import chainlit.config as cfg
         if hasattr(cfg.config, 'features') and hasattr(cfg.config.features, 'audio'):
-            if not cfg.config.features.audio.enabled:
-                cfg.config.features.audio.enabled = True
-                logger.info("Audio feature force-enabled in on_chat_start")
+            audio_enabled = cfg.config.features.audio.enabled
+            logger.info(f"Audio feature config state: enabled={audio_enabled}")
+            if not audio_enabled:
+                logger.warning(
+                    "Audio feature is disabled in config. "
+                    "Check chainlit.toml [features.audio] enabled setting."
+                )
     except Exception as e:
-        logger.warning(f"Could not enable audio in on_chat_start: {e}")
+        logger.debug(f"Could not check audio config in on_chat_start: {e}")
     
     # Trigger database initialization to ensure tables exist before Chainlit queries them
     try:

@@ -104,45 +104,157 @@ def configure_auth_mode():
 
 configure_auth_mode()
 
+
+def configure_audio_feature():
+    """
+    Ensure audio feature is enabled in chainlit.toml before Chainlit loads the configuration.
+    
+    This function modifies the TOML file directly (similar to configure_auth_mode) to ensure
+    the audio feature is enabled before Chainlit reads the config. This is necessary because
+    Chainlit loads config at import time and the config object may be immutable.
+    
+    Checks both chainlit.toml (root) and .chainlit/config.toml (Chainlit may prefer this).
+    """
+    project_root = Path(__file__).parent
+    
+    # Chainlit may prefer .chainlit/config.toml over chainlit.toml
+    # Check both locations, but prioritize .chainlit/config.toml if it exists
+    chainlit_dir_config = project_root / ".chainlit" / "config.toml"
+    root_config = project_root / "chainlit.toml"
+    
+    # Determine which config file to use
+    if chainlit_dir_config.exists():
+        chainlit_toml_path = chainlit_dir_config
+        print(f"INFO: Using Chainlit config at {chainlit_toml_path}")
+    elif root_config.exists():
+        chainlit_toml_path = root_config
+        print(f"INFO: Using Chainlit config at {chainlit_toml_path}")
+    else:
+        # Neither exists - try to create/update root config
+        chainlit_toml_path = root_config
+        print(
+            f"WARNING: No chainlit.toml found. Will create/update {chainlit_toml_path}"
+        )
+
+    # Read existing content if file exists, otherwise start with empty
+    if chainlit_toml_path.exists():
+        content = chainlit_toml_path.read_text(encoding="utf-8")
+    else:
+        # Create basic config structure
+        content = """[project]
+enable_telemetry = false
+
+[features.audio]
+enabled = true
+"""
+    
+    original_content = content
+
+    # Check if audio section exists and what its current value is
+    audio_section_pattern = r"\[features\.audio\]"
+    has_audio_section = bool(re.search(audio_section_pattern, content))
+    
+    if not has_audio_section:
+        # Add audio section after [features.persistent_sessions] or before [UI]
+        # Find insertion point
+        if "[UI]" in content:
+            # Insert before [UI] section
+            content = re.sub(
+                r"(\[UI\])",
+                r"[features.audio]\nenabled = true\n\n\1",
+                content,
+                1
+            )
+        elif "[features.persistent_sessions]" in content:
+            # Insert after persistent_sessions section
+            content = re.sub(
+                r"(\[features\.persistent_sessions\]\s*enabled\s*=\s*true)",
+                r"\1\n\n# Allow users to use the microphone\n[features.audio]\nenabled = true",
+                content,
+                1
+            )
+        else:
+            # Fallback: add before [UI] or at end
+            if "[UI]" in content:
+                content = re.sub(r"(\[UI\])", r"[features.audio]\nenabled = true\n\n\1", content, 1)
+            else:
+                content += "\n\n# Allow users to use the microphone\n[features.audio]\nenabled = true\n"
+    else:
+        # Audio section exists - ensure enabled = true
+        # Pattern to match [features.audio] section and enabled line
+        # Handle various formats: enabled = true, enabled=true, enabled = false, etc.
+        # Match: [features.audio] followed by optional comments/newlines, then enabled = value
+        audio_enabled_pattern = r"(\[features\.audio\]\s*(?:#[^\n]*\n)?\s*)enabled\s*=\s*(true|false)"
+        
+        if re.search(audio_enabled_pattern, content, re.MULTILINE):
+            # Replace enabled = false with enabled = true, or ensure it's true
+            def replace_enabled(match):
+                prefix = match.group(1)
+                value = match.group(2).lower()
+                if value == "false":
+                    return f"{prefix}enabled = true"
+                else:
+                    return match.group(0)  # Already true, keep as is
+            
+            content = re.sub(audio_enabled_pattern, replace_enabled, content, flags=re.MULTILINE)
+        else:
+            # Audio section exists but no enabled line - add it after the section header
+            # Handle case where there's a comment after [features.audio]
+            content = re.sub(
+                r"(\[features\.audio\]\s*(?:#[^\n]*)?)\n",
+                r"\1\nenabled = true\n",
+                content,
+                1
+            )
+
+    # Only write if content changed
+    if content != original_content:
+        # Ensure parent directory exists (for .chainlit/config.toml)
+        chainlit_toml_path.parent.mkdir(parents=True, exist_ok=True)
+        chainlit_toml_path.write_text(content, encoding="utf-8")
+        print(f"INFO: Audio feature enabled in {chainlit_toml_path.name}")
+    else:
+        # Verify the current value
+        enabled_match = re.search(
+            r"\[features\.audio\].*?enabled\s*=\s*(true|false)",
+            content,
+            re.DOTALL | re.IGNORECASE
+        )
+        if enabled_match:
+            enabled_value = enabled_match.group(1).lower()
+            if enabled_value == "true":
+                print("INFO: Audio feature is already enabled in chainlit.toml")
+            else:
+                print(f"WARNING: Audio feature is set to {enabled_value} in chainlit.toml")
+        else:
+            print("WARNING: Could not verify audio feature setting in chainlit.toml")
+
+
+configure_audio_feature()
+
 import chainlit as cl
 
-# Ensure audio feature is enabled (workaround for config loading issue)
-def ensure_audio_enabled():
-    """Ensure audio feature is enabled programmatically."""
+# Verify audio config after Chainlit import (for debugging)
+def verify_audio_config():
+    """Verify audio configuration after Chainlit loads it."""
     try:
         import chainlit.config as cfg
         if hasattr(cfg.config, 'features') and hasattr(cfg.config.features, 'audio'):
-            # Check current state
             current_enabled = cfg.config.features.audio.enabled
-            print(f"INFO: Current audio enabled state: {current_enabled}")
-            
-            # Try to update using model_copy if it's a Pydantic model
-            if hasattr(cfg.config.features.audio, 'model_copy'):
-                updated_audio = cfg.config.features.audio.model_copy(update={'enabled': True})
-                # Update the features object
-                if hasattr(cfg.config.features, 'model_copy'):
-                    updated_features = cfg.config.features.model_copy(update={'audio': updated_audio})
-                    # This won't work if config is read-only, but let's try
-                    cfg.config = cfg.config.model_copy(update={'features': updated_features})
-                else:
-                    cfg.config.features.audio = updated_audio
-            else:
-                # Direct assignment
-                cfg.config.features.audio.enabled = True
-            
-            # Verify it's actually set
-            final_state = cfg.config.features.audio.enabled
-            if final_state:
-                print("INFO: Audio feature successfully enabled programmatically")
-            else:
-                print(f"WARNING: Audio feature still disabled after attempt (current: {final_state})")
+            print(f"INFO: Chainlit loaded audio.enabled = {current_enabled}")
+            if not current_enabled:
+                print(
+                    "WARNING: Audio feature is disabled in Chainlit config despite TOML setting. "
+                    "This may indicate a Chainlit bug or config loading issue."
+                )
+        else:
+            print("WARNING: Audio feature config not found in Chainlit config object")
     except Exception as e:
-        print(f"WARNING: Could not programmatically enable audio: {e}")
-        import traceback
-        traceback.print_exc()
+        print(f"WARNING: Could not verify audio config: {e}")
 
-# Call after chainlit import but before handlers
-ensure_audio_enabled()
+
+# Verify after import
+verify_audio_config()
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 from chainlit.data.storage_clients.base import BaseStorageClient
 from typing import Dict, Any, Union
@@ -268,5 +380,5 @@ def get_data_layer():
 from chainlit_bootstrap import handlers  # noqa: F401
 from chainlit_bootstrap.auth import oauth_callback  # noqa: F401
 
-# Ensure audio is enabled after all imports (Chainlit may reload config)
-ensure_audio_enabled()
+# Final verification after all imports
+verify_audio_config()
