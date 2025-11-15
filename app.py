@@ -106,6 +106,7 @@ configure_auth_mode()
 
 import chainlit as cl
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
+from chainlit.data.storage import LocalStorageConfig
 
 _data_layer = None
 
@@ -139,10 +140,18 @@ def get_data_layer():
         data_dir = Path(__file__).parent / "data"
         data_dir.mkdir(exist_ok=True)
 
+        elements_dir = data_dir / "elements"
+        elements_dir.mkdir(exist_ok=True)
+
         db_path = data_dir / "chainlit.db"
         conninfo = f"sqlite+aiosqlite:///{db_path}"
 
-        _data_layer = SQLAlchemyDataLayer(conninfo=conninfo)
+        storage_config = LocalStorageConfig(path=str(elements_dir))
+
+        _data_layer = SQLAlchemyDataLayer(
+            conninfo=conninfo,
+            storage_config=storage_config,
+        )
         _initialize_database_tables(conninfo)
 
     return _data_layer

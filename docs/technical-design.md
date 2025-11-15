@@ -35,6 +35,7 @@
 - **presidio-anonymizer** (>=2.2.0): Anonymizes detected PII
 - **spacy** (>=3.7.0): NLP library used by Presidio
   - English model: `en_core_web_sm` (downloaded during Docker build)
+- Controlled by `ENABLE_PRESIDIO_PII_CLEANING` (disabled by default; set to `1` to enable)
 
 ### Database
 - **SQLAlchemy** (>=2.0.0): ORM for database operations

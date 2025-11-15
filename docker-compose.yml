@@ -31,6 +31,8 @@ services:
       - CHAINLIT_AUTH_SECRET=${CHAINLIT_AUTH_SECRET:-}
       # No-login mode: set to any non-empty value (e.g., "1", "true") to bypass authentication in dev
       - CHAINLIT_NO_LOGIN=${CHAINLIT_NO_LOGIN:-}
+      # Presidio PII cleaning is disabled by default. Set to "1" to enable.
+      - ENABLE_PRESIDIO_PII_CLEANING=0
     command: sh -c "python /app/scripts/init_db.py && chainlit run app.py --host 0.0.0.0 --port 8000 --watch"
     restart: unless-stopped
     healthcheck:

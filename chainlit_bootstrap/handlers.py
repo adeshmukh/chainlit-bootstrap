@@ -7,6 +7,10 @@ from langchain_classic.memory import ConversationBufferMemory
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_community.vectorstores import Chroma
 
+from .compat import ensure_langchain_compat
+
+ensure_langchain_compat()
+
 import chainlit as cl
 
 from .charts import histogram_from_values
@@ -182,21 +186,20 @@ async def _respond_with_web_search(query: str) -> None:
     try:
         results = await cl.make_async(run_web_search)(query)
     except TavilyNotConfiguredError:
-        await progress.update(
-            content=(
-                "⚠️ Web search is not configured. "
-                "Set the `TAVILY_API_KEY` environment variable and restart the app."
-            )
+        progress.content = (
+            "⚠️ Web search is not configured. "
+            "Set the `TAVILY_API_KEY` environment variable and restart the app."
         )
+        await progress.update()
         return
     except Exception as exc:  # noqa: BLE001
-        await progress.update(
-            content=f"❌ Web search failed: {type(exc).__name__}: {exc}"
-        )
+        progress.content = f"❌ Web search failed: {type(exc).__name__}: {exc}"
+        await progress.update()
         return
 
     if not results:
-        await progress.update(content=f"🔎 No web results found for `{query}`.")
+        progress.content = f"🔎 No web results found for `{query}`."
+        await progress.update()
         return
 
     formatted_results = []
@@ -212,9 +215,10 @@ async def _respond_with_web_search(query: str) -> None:
         else:
             formatted_results.append(f"{idx}. **{title}**\n{sanitized_snippet}".strip())
 
-    await progress.update(
-        content="🔎 **Web search results:**\n\n" + "\n\n".join(formatted_results)
+    progress.content = "🔎 **Web search results:**\n\n" + "\n\n".join(
+        formatted_results
     )
+    await progress.update()
 
 
 @cl.on_chat_start
