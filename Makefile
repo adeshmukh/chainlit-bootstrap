@@ -1,10 +1,12 @@
 .PHONY: help venv install sync lint format fix test build rebuild up down dev clean download-spacy-model
 
+UV_PYTHON := .venv/bin/python
+
 # Default target
 help:
 	@echo "Available targets:"
 	@echo "  venv       - Create virtual environment with uv"
-	@echo "  install    - Install/sync dependencies with uv (creates venv if needed)"
+	@echo "  install    - Recreate venv and install deps from pyproject.toml"
 	@echo "  sync       - Sync dependencies (alias for install)"
 	@echo "  lint       - Run ruff linter (requires install)"
 	@echo "  format     - Format code with ruff (requires install)"
@@ -28,28 +30,13 @@ venv:
 		echo "Virtual environment already exists. Delete .venv to recreate with Python 3.12."; \
 	fi
 
-# Install/sync dependencies (depends on venv)
-# Install dependencies directly from pyproject.toml (don't install project itself)
-install sync: venv
-	@echo "Installing dependencies into virtual environment..."
-	uv pip install --python .venv/bin/python \
-		chainlit \
-		chromadb \
-		presidio-analyzer \
-		presidio-anonymizer \
-		spacy \
-		openai \
-		sqlalchemy \
-		aiosqlite \
-		langchain \
-		langchain-classic \
-		langchain-community \
-		langchain-openai \
-		langchain-text-splitters \
-		tiktoken \
-		ruff \
-		pytest \
-		pytest-asyncio
+# Recreate venv and install dependencies from pyproject.toml (includes dev extras)
+install sync:
+	@echo "Removing existing virtual environment..."
+	@rm -rf .venv
+	@$(MAKE) venv
+	@echo "Installing dependencies defined in pyproject.toml (with [dev] extras)..."
+	uv pip install --python $(UV_PYTHON) -e ".[dev]"
 
 # Lint code (depends on install)
 lint: install
