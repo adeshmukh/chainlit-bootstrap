@@ -12,3 +12,8 @@ We can't wait to see what you create with Chainlit! Happy coding! 💻😊
 ## Welcome screen
 
 To modify the welcome screen, edit the `chainlit.md` file at the root of your project. If you do not want a welcome screen, just leave this file empty.
+
+### Tips
+
+- Upload a `.txt` file to enable document Q&A.
+- Type `/search your question` to run a live Tavily web search when you need up-to-date info.

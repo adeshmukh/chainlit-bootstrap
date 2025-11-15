@@ -12,6 +12,7 @@
   - `langchain-openai` (>=0.1.0): LangChain integration for OpenAI
   - Models: GPT-4o-mini (default, configurable via `DEFAULT_GAI_MODEL`)
   - Used for both chat completions and text embeddings
+- **Tavily** (>=0.3.8 via `tavily-python`): Real-time web search provider accessed through explicit `/search` commands
 
 ### LangChain Ecosystem
 - **langchain** (>=0.1.0): Core orchestration framework
@@ -237,6 +238,7 @@ DEFAULT_GAI_MODEL=gpt-4o-mini  # Optional
 CHAINLIT_PORT=8000              # Optional
 CHAINLIT_HOST=0.0.0.0           # Optional
 CHAINLIT_NO_LOGIN=1             # Optional: bypass authentication in dev mode
+TAVILY_API_KEY=tvly-...         # Optional: enables `/search` web lookups
 ```
 
 ### Common Development Tasks

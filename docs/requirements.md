@@ -65,6 +65,18 @@ This project is a Chainlit-based conversational AI application that enables user
 - **Description**: Users can create and switch between different conversation threads
 - **Storage**: SQLite database with aiosqlite
 
+### 7. Web Search
+- **Status**: ✅ Implemented
+- **Description**: Live Tavily-powered web search for up-to-date answers outside uploaded documents
+- **Usage**: Users can type `/search your question` (or `search: your question`) to fetch the latest information
+- **Implementation**:
+  - `tavily-python` client
+  - Sanitized snippets returned as a formatted message
+- **Privacy Note**: `/search` queries are sent to Tavily exactly as typed; remind users not to include sensitive data when performing external lookups
+- **Current Limitations**:
+  - Requires a valid `TAVILY_API_KEY`
+  - Commands must be prefixed (general chat won't automatically call the search tool)
+
 ## Environment Requirements
 
 ### Required Environment Variables
@@ -79,6 +91,7 @@ This project is a Chainlit-based conversational AI application that enables user
 - `CHAINLIT_PORT`: Port for Chainlit server (default: `8000`)
 - `CHAINLIT_HOST`: Host for Chainlit server (default: `0.0.0.0`)
 - `CHAINLIT_NO_LOGIN`: Set to any non-empty value (e.g., `1`, `true`) to bypass authentication in dev mode. Useful for testing and development. Authentication is enabled by default.
+- `TAVILY_API_KEY`: Enables the Tavily web search integration used by the `/search` command
 
 ## Current Limitations and Future Enhancements
 

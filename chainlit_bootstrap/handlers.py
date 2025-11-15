@@ -1,7 +1,5 @@
 """Chainlit event handlers."""
 
-from typing import Optional
-
 from langchain_classic.chains import ConversationalRetrievalChain
 from langchain_classic.memory import ConversationBufferMemory
 from langchain_community.chat_message_histories import ChatMessageHistory
@@ -11,12 +9,17 @@ import chainlit as cl
 
 from .llm import embeddings, llm, text_splitter
 from .pii import anonymize_text
+from .search import (
+    TavilyNotConfiguredError,
+    is_web_search_configured,
+    run_web_search,
+)
 
 
 async def _process_file(file: cl.File) -> bool:
     """
     Process an uploaded file and set up the chain.
-    
+
     Currently only text files are supported. PDF support requires additional libraries like pypdf.
     Returns True if successful.
     """
@@ -73,6 +76,105 @@ async def _process_file(file: cl.File) -> bool:
     return True
 
 
+def _get_general_history() -> ChatMessageHistory:
+    """Return or initialize the general chat history for the session."""
+    history: ChatMessageHistory | None = cl.user_session.get("general_history")
+    if history is None:
+        history = ChatMessageHistory()
+        cl.user_session.set("general_history", history)
+    return history
+
+
+async def _respond_with_general_chat(user_input: str) -> None:
+    """Provide a response using the base LLM when no document is loaded."""
+    if not user_input.strip():
+        await cl.Message(
+            content="Please enter a question or upload a document to get started."
+        ).send()
+        return
+
+    history = _get_general_history()
+    history.add_user_message(user_input)
+
+    cb = cl.AsyncLangchainCallbackHandler()
+    response = await llm.ainvoke(history.messages, callbacks=[cb])
+
+    sanitized_answer = anonymize_text(response.content)
+    history.add_ai_message(sanitized_answer)
+
+    await cl.Message(content=sanitized_answer).send()
+
+
+def _extract_search_query(user_input: str) -> str | None:
+    """Return the search query if the user prefixed their message with a search command."""
+    if not user_input:
+        return None
+
+    trimmed = user_input.strip()
+    lower_trimmed = trimmed.lower()
+
+    if lower_trimmed.startswith("/search"):
+        parts = trimmed.split(maxsplit=1)
+        return parts[1].strip() if len(parts) > 1 else ""
+    if lower_trimmed.startswith("!search"):
+        parts = trimmed.split(maxsplit=1)
+        return parts[1].strip() if len(parts) > 1 else ""
+    for prefix in ("search:", "web:", "lookup:"):
+        if lower_trimmed.startswith(prefix):
+            return trimmed[len(prefix) :].strip()
+
+    return None
+
+
+async def _respond_with_web_search(query: str) -> None:
+    """Execute a Tavily web search and stream the results back to the user."""
+    if not query:
+        await cl.Message(
+            content="Please provide a query after the `/search` command. Example: `/search latest Chainlit release`"
+        ).send()
+        return
+
+    progress = cl.Message(content=f"🔎 Searching the web for `{query}`...")
+    await progress.send()
+
+    try:
+        results = await cl.make_async(run_web_search)(query)
+    except TavilyNotConfiguredError:
+        await progress.update(
+            content=(
+                "⚠️ Web search is not configured. "
+                "Set the `TAVILY_API_KEY` environment variable and restart the app."
+            )
+        )
+        return
+    except Exception as exc:  # noqa: BLE001
+        await progress.update(
+            content=f"❌ Web search failed: {type(exc).__name__}: {exc}"
+        )
+        return
+
+    if not results:
+        await progress.update(content=f"🔎 No web results found for `{query}`.")
+        return
+
+    formatted_results = []
+    for idx, result in enumerate(results, start=1):
+        title = result.get("title") or "Untitled result"
+        url = result.get("url") or ""
+        snippet = result.get("content") or result.get("snippet") or ""
+        sanitized_snippet = anonymize_text(snippet) if snippet else ""
+        if url:
+            formatted_results.append(
+                f"{idx}. **[{title}]({url})**\n{sanitized_snippet}".strip()
+            )
+        else:
+            formatted_results.append(f"{idx}. **{title}**\n{sanitized_snippet}".strip())
+
+    await progress.update(
+        content="🔎 **Web search results:**\n\n" + "\n\n".join(formatted_results)
+    )
+
+
 @cl.on_chat_start
 async def on_chat_start():
     """Initialize chat session and ensure database is initialized."""
@@ -88,7 +190,7 @@ async def on_chat_start():
     except Exception:
         # Database will be initialized when actually needed
         pass
-    
+
     chain = cl.user_session.get("chain")
     if chain:
         file_name = cl.user_session.get("file_name", "document")
@@ -97,9 +199,16 @@ async def on_chat_start():
         ).send()
         return
 
-    await cl.Message(
-        content="👋 Welcome! Please upload a text file using the file upload button (📎) and attach it to your message to begin asking questions about your document."
-    ).send()
+    welcome_message = (
+        "👋 Welcome! You can start chatting right away or optionally upload a text file (📎) "
+        "if you want me to answer questions about that document."
+    )
+    if is_web_search_configured():
+        welcome_message += (
+            "\n\nNeed the latest info? Type `/search your question` to run a live Tavily web search."
+        )
+
+    await cl.Message(content=welcome_message).send()
 
 
 @cl.on_message
@@ -118,23 +227,28 @@ async def main(message: cl.Message):
                     await cl.Message(
                         content="❌ Failed to process the file. Please ensure it's a valid text file and try again."
                     ).send()
-                
+
                 # If no text content with file, return early
                 if not message.content or not message.content.strip():
                     return
                 break
 
-    chain: Optional[ConversationalRetrievalChain] = cl.user_session.get("chain")
-    if not chain:
-        await cl.Message(
-            content="Please upload a document first using the file upload button (📎 icon). Attach the file to your message to process it."
-        ).send()
+    user_content = message.content or ""
+    sanitized_input = anonymize_text(user_content) if user_content else ""
+
+    raw_search_query = _extract_search_query(user_content or "")
+    if raw_search_query is not None:
+        await _respond_with_web_search(raw_search_query)
         return
 
-    sanitized_input = anonymize_text(message.content)
+    chain: ConversationalRetrievalChain | None = cl.user_session.get("chain")
+    if not chain:
+        await _respond_with_general_chat(sanitized_input)
+        return
+
     cb = cl.AsyncLangchainCallbackHandler()
     res = await chain.acall(sanitized_input, callbacks=[cb])
-    
+
     sanitized_answer = anonymize_text(res["answer"])
     source_documents = res["source_documents"]
     text_elements: list[cl.Text] = []
@@ -157,7 +271,7 @@ async def main(message: cl.Message):
 async def on_audio_chunk(audio_chunk):
     """
     Handle real-time audio chunks for voice input.
-    
+
     TODO: Implement OpenAI Realtime API integration.
     Currently a placeholder that acknowledges audio input.
     """
