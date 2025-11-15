@@ -75,6 +75,7 @@ def init_database():
             Column('end', String),
             Column('generation', Text),
             Column('showInput', String),
+            Column('defaultOpen', Integer),
             Column('language', String),
             Column('indent', Integer),
         )
@@ -96,6 +97,7 @@ def init_database():
             Column('language', String),
             Column('forId', String),
             Column('mime', String),
+            Column('props', Text),
         )
         
         # Feedbacks table
@@ -112,12 +114,35 @@ def init_database():
         # Create all tables
         metadata.create_all(engine)
         
-        # Verify tables were created
+        # Verify tables were created and add missing columns
         import sqlite3
+
+        def ensure_column(conn, table, column, sql_type):
+            """Add column to table if missing."""
+            cursor = conn.cursor()
+            cursor.execute(f"PRAGMA table_info({table});")
+            existing = {col[1] for col in cursor.fetchall()}
+            if column not in existing:
+                print(f"Adding missing '{column}' column to {table} table...")
+                cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {sql_type};")
+                conn.commit()
+                print(f"✓ Added '{column}' column to {table} table")
+
         conn = sqlite3.connect(str(db_path))
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = cursor.fetchall()
+
+        try:
+            ensure_column(conn, "elements", "props", "TEXT")
+        except Exception as e:
+            print(f"⚠ Warning: Could not add props column: {e}")
+
+        try:
+            ensure_column(conn, "steps", "defaultOpen", "INTEGER")
+        except Exception as e:
+            print(f"⚠ Warning: Could not add defaultOpen column: {e}")
+
         conn.close()
         
         if tables:

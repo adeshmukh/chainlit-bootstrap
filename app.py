@@ -1,9 +1,27 @@
 """Chainlit application entry point."""
 
+import logging
 import re
 from pathlib import Path
 
 from chainlit_bootstrap.auth import is_no_login_mode
+
+
+def configure_logging():
+    """
+    Configure logging to suppress DEBUG level messages, especially react-devtools noise.
+    """
+    # Set root logger to INFO level to suppress DEBUG messages
+    logging.basicConfig(level=logging.INFO)
+    
+    # Specifically suppress DEBUG logs from socketio/websocket libraries
+    logging.getLogger("socketio").setLevel(logging.WARNING)
+    logging.getLogger("engineio").setLevel(logging.WARNING)
+    logging.getLogger("uvicorn").setLevel(logging.INFO)
+    logging.getLogger("uvicorn.access").setLevel(logging.INFO)
+
+
+configure_logging()
 
 
 def configure_auth_mode():

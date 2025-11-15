@@ -18,6 +18,8 @@ services:
     environment:
       - CHAINLIT_HOST=0.0.0.0
       - CHAINLIT_PORT=8000
+      # Suppress DEBUG level logs
+      - LOG_LEVEL=INFO
       # Google OAuth credentials (can be overridden via .env file)
       - OAUTH_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID:-}
       - OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET:-}
@@ -26,7 +28,7 @@ services:
       - CHAINLIT_AUTH_SECRET=${CHAINLIT_AUTH_SECRET:-}
       # No-login mode: set to any non-empty value (e.g., "1", "true") to bypass authentication in dev
       - CHAINLIT_NO_LOGIN=${CHAINLIT_NO_LOGIN:-}
-    command: chainlit run app.py --host 0.0.0.0 --port 8000 --watch
+    command: sh -c "python /app/scripts/init_db.py && chainlit run app.py --host 0.0.0.0 --port 8000 --watch"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000')"]
