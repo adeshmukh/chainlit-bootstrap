@@ -1,5 +1,7 @@
 """Chainlit event handlers."""
 
+import random
+
 from langchain_classic.chains import ConversationalRetrievalChain
 from langchain_classic.memory import ConversationBufferMemory
 from langchain_community.chat_message_histories import ChatMessageHistory
@@ -7,6 +9,7 @@ from langchain_community.vectorstores import Chroma
 
 import chainlit as cl
 
+from .charts import histogram_from_values
 from .llm import embeddings, llm, text_splitter
 from .pii import anonymize_text
 from .search import (
@@ -126,6 +129,45 @@ def _extract_search_query(user_input: str) -> str | None:
     return None
 
 
+def _parse_chart_request(user_input: str) -> int | None:
+    """Return the requested sample size if the user issued a /chart command."""
+    if not user_input:
+        return None
+
+    trimmed = user_input.strip()
+    if not trimmed.lower().startswith("/chart"):
+        return None
+
+    parts = trimmed.split()
+    if len(parts) == 1:
+        return 200
+
+    try:
+        requested = int(parts[1])
+    except ValueError:
+        return 200
+
+    return max(20, min(2000, requested))
+
+
+async def _respond_with_demo_chart(sample_size: int) -> None:
+    """Render a Seaborn histogram and return it as a Chainlit attachment."""
+    rng = random.Random(sample_size)
+    values = [rng.gauss(mu=0, sigma=1) for _ in range(sample_size)]
+
+    chart = histogram_from_values(
+        values, title=f"Demo distribution (n={sample_size})"
+    )
+
+    await cl.Message(
+        content=(
+            "📊 Here's a Seaborn-powered histogram rendered in Chainlit.\n"
+            "Use `/chart <sample_size>` to choose between 20 and 2000 points."
+        ),
+        elements=[chart],
+    ).send()
+
+
 async def _respond_with_web_search(query: str) -> None:
     """Execute a Tavily web search and stream the results back to the user."""
     if not query:
@@ -207,6 +249,9 @@ async def on_chat_start():
         welcome_message += (
             "\n\nNeed the latest info? Type `/search your question` to run a live Tavily web search."
         )
+    welcome_message += (
+        "\n\nWant a visual? Type `/chart 200` (or another size) to see a Seaborn histogram."
+    )
 
     await cl.Message(content=welcome_message).send()
 
@@ -239,6 +284,11 @@ async def main(message: cl.Message):
     raw_search_query = _extract_search_query(user_content or "")
     if raw_search_query is not None:
         await _respond_with_web_search(raw_search_query)
+        return
+
+    chart_sample_size = _parse_chart_request(user_content or "")
+    if chart_sample_size is not None:
+        await _respond_with_demo_chart(chart_sample_size)
         return
 
     chain: ConversationalRetrievalChain | None = cl.user_session.get("chain")

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Download spaCy model wheel from GitHub releases for Docker caching."""
 
-import urllib.request
 import json
 import os
 import sys
+import urllib.request
 
 
 def download_spacy_model(

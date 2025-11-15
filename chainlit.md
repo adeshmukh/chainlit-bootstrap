@@ -17,3 +17,4 @@ To modify the welcome screen, edit the `chainlit.md` file at the root of your pr
 
 - Upload a `.txt` file to enable document Q&A.
 - Type `/search your question` to run a live Tavily web search when you need up-to-date info.
+- Type `/chart 200` (or any number between 20 and 2000) to visualize a Seaborn histogram right in the chat.

@@ -19,7 +19,7 @@ COPY pyproject.toml ./
 
 # Install Python dependencies using uv
 # Install everything declared in pyproject.toml to stay in sync automatically
-RUN uv pip sync --system pyproject.toml
+RUN uv pip install --system .
 
 # Install spaCy model: use cached wheel if available, otherwise download
 # Copy installation script and cached model wheel directory (if it exists)

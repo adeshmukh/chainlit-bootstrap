@@ -2,7 +2,6 @@
 
 import os
 import secrets
-from typing import Dict, Optional
 
 import chainlit as cl
 
@@ -71,9 +70,9 @@ configure_google_oauth()
 def oauth_callback(
     provider_id: str,
     token: str,
-    raw_user_data: Dict[str, str],
+    raw_user_data: dict[str, str],
     default_user: cl.User,
-) -> Optional[cl.User]:
+) -> cl.User | None:
     """
     OAuth callback handler for Google authentication.
 

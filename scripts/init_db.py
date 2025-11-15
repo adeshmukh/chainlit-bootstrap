@@ -12,25 +12,25 @@ def init_database():
     """Initialize database tables using SQLAlchemy."""
     data_dir = Path(__file__).parent.parent / "data"
     data_dir.mkdir(exist_ok=True)
-    
+
     db_path = data_dir / "chainlit.db"
     print(f"Initializing database at {db_path}...")
-    
+
     try:
         from sqlalchemy import (
-            create_engine,
             Column,
-            String,
-            Text,
             Integer,
             MetaData,
+            String,
             Table,
+            Text,
+            create_engine,
         )
-        
+
         conninfo = f"sqlite:///{db_path}"
         engine = create_engine(conninfo, echo=False)
         metadata = MetaData()
-        
+
         # Define Chainlit tables schema based on Chainlit's data layer
         users_table = Table(
             'users',
@@ -40,7 +40,7 @@ def init_database():
             Column('createdAt', String),
             Column('metadata', Text),
         )
-        
+
         # Threads table
         threads_table = Table(
             'threads',
@@ -53,7 +53,7 @@ def init_database():
             Column('tags', Text),
             Column('metadata', Text),
         )
-        
+
         # Steps table
         steps_table = Table(
             'steps',
@@ -79,7 +79,7 @@ def init_database():
             Column('language', String),
             Column('indent', Integer),
         )
-        
+
         # Elements table
         elements_table = Table(
             'elements',
@@ -99,7 +99,7 @@ def init_database():
             Column('mime', String),
             Column('props', Text),
         )
-        
+
         # Feedbacks table
         feedbacks_table = Table(
             'feedbacks',
@@ -110,10 +110,10 @@ def init_database():
             Column('value', Integer, nullable=False),
             Column('comment', String),
         )
-        
+
         # Create all tables
         metadata.create_all(engine)
-        
+
         # Verify tables were created and add missing columns
         import sqlite3
 
@@ -144,16 +144,16 @@ def init_database():
             print(f"⚠ Warning: Could not add defaultOpen column: {e}")
 
         conn.close()
-        
+
         if tables:
             print(f"✓ Created tables: {[t[0] for t in tables]}")
         else:
             print("⚠ Warning: No tables found after initialization")
             sys.exit(1)
-        
+
         engine.dispose()
         print("✓ Database initialization completed successfully")
-            
+
     except Exception as e:
         import traceback
         print(f"✗ Error initializing database: {e}")
