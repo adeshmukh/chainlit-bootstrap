@@ -9,20 +9,21 @@
 
 ### LLM & AI
 - **OpenAI** (>=1.0.0): Primary LLM provider
-  - `langchain-openai` (>=0.1.0): LangChain integration for OpenAI
+  - `llama-index-llms-openai` (>=0.1.0): LlamaIndex integration for OpenAI
   - Models: GPT-4o-mini (default, configurable via `DEFAULT_GAI_MODEL`)
   - Used for both chat completions and text embeddings
 - **Tavily** (>=0.3.8 via `tavily-python`): Real-time web search provider accessed through explicit `/search` commands
 
-### LangChain Ecosystem
-- **langchain** (>=0.1.0): Core orchestration framework
-- **langchain-community** (>=0.0.20): Community integrations
-- **langchain-text-splitters** (>=0.0.1): Text chunking utilities
+### LlamaIndex Ecosystem
+- **llama-index-core** (>=0.10.0): Core orchestration framework for RAG and document processing
+- **llama-index-llms-openai** (>=0.1.0): OpenAI LLM integration
+- **llama-index-embeddings-openai** (>=0.1.0): OpenAI embeddings integration
+- **llama-index-vector-stores-chroma** (>=0.1.0): ChromaDB vector store integration
 - **Components Used**:
-  - `ConversationalRetrievalChain`: RAG chain with conversation memory
-  - `RecursiveCharacterTextSplitter`: Document chunking (1000 chars, 100 overlap)
-  - `ConversationBufferMemory`: Maintains chat history
-  - `ChatMessageHistory`: Stores message history
+  - `VectorStoreIndex`: RAG index with vector store backend
+  - `SentenceSplitter`: Document chunking (1000 chars, 100 overlap)
+  - `ChatMemoryBuffer`: Maintains chat history
+  - `SimpleChatEngine` / `as_chat_engine`: Conversational chat engines with memory
 
 ### Vector Database
 - **ChromaDB** (>=0.4.0): Embedded vector database for document embeddings
@@ -70,9 +71,11 @@ Vector Store Creation (ChromaDB)
     ↓
 User Query
     ↓
-Retrieval from Vector Store
+Assistant Routing (if active)
     ↓
-RAG Chain (LangChain)
+Retrieval from Vector Store (if document loaded)
+    ↓
+RAG Chat Engine (LlamaIndex)
     ↓
 LLM Response
     ↓
@@ -85,11 +88,12 @@ Stream Response to User
    - File upload → Text extraction → Chunking → Embedding → Vector storage
 
 2. **Query Processing Pipeline**
-   - User input → Vector retrieval → RAG → Streaming output
+   - User input → Assistant routing (if active) → Vector retrieval → RAG → Streaming output
 
 3. **Session Management**
    - Persistent sessions stored in SQLite
-   - Conversation history maintained via LangChain memory
+   - Conversation history maintained via LlamaIndex memory
+   - Assistant state stored per session
 
 4. **Security Layer**
    - Google OAuth authentication (can be bypassed in dev mode via `CHAINLIT_NO_LOGIN`)
@@ -262,10 +266,86 @@ export CHAINLIT_PORT=8001
 - Ensure Docker has sufficient memory (4GB+ recommended)
 - Check Python version compatibility (3.12 required)
 
+## Assistant Architecture
+
+The application supports a multi-assistant system where specialized assistants can be registered and discovered automatically.
+
+### Discovery Convention
+
+Assistants are discovered using a convention-based approach:
+
+1. **Directory Structure**: Create a package under `assistants/<assistant-name>/`
+2. **Contract**: Each assistant package must export an `ASSISTANT_DESCRIPTOR` in its `__init__.py`
+3. **Auto-Discovery**: The registry automatically scans `assistants/` and imports descriptors on startup
+
+### Assistant Contract
+
+Each assistant must implement the `AssistantDescriptor` interface:
+
+```python
+from chainlit_bootstrap.assistants import AssistantDescriptor
+
+ASSISTANT_DESCRIPTOR = AssistantDescriptor(
+    name="Assistant Name",
+    command="command",  # Slash command prefix (e.g., "health")
+    description="What this assistant does",
+    handle_message=async_function,  # Required: async (message: str, context: dict) -> str
+    handle_file=optional_function,  # Optional: custom file handling
+    handle_search=optional_function,  # Optional: custom search handling
+)
+```
+
+### Example: Healthcare Assistant
+
+The healthcare assistant (`assistants/healthcare/`) demonstrates:
+
+- **Parlant-inspired design**: Uses journey-based conversation flows
+- **Tool integration**: Implements tools for scheduling and lab results
+- **State management**: Maintains conversation state in Chainlit session
+- **Guidelines**: Handles edge cases (insurance, urgent requests, off-topic queries)
+
+### Using Assistants
+
+Users can interact with assistants via:
+
+- `/assistant list`: List all available assistants
+- `/assistant <name>`: Switch default assistant
+- `/<command> <message>`: Use assistant directly (e.g., `/health schedule appointment`)
+
+### Shared Commands
+
+The following commands work across all assistants:
+
+- `/search <query>`: Web search via Tavily
+- `/chart <size>`: Generate visualization
+- File uploads: Process documents for Q&A
+
+### Adding a New Assistant
+
+1. Create `assistants/<your-assistant>/` directory
+2. Implement `__init__.py` with `ASSISTANT_DESCRIPTOR`
+3. Implement `handle_message` function (and optionally `handle_file`, `handle_search`)
+4. Restart the application - the assistant will be auto-discovered
+
+### LlamaIndex Migration
+
+The application migrated from LangChain to LlamaIndex for:
+
+- **Simpler API**: More straightforward RAG and chat engine setup
+- **Better streaming**: Native async streaming support
+- **Framework flexibility**: Assistants can use any framework (Parlant, Haystack, etc.)
+
+Key changes:
+- `ConversationalRetrievalChain` → `VectorStoreIndex.as_chat_engine()`
+- `ChatMessageHistory` → `ChatMemoryBuffer`
+- `RecursiveCharacterTextSplitter` → `SentenceSplitter`
+- LangChain callbacks → LlamaIndex streaming
+
 ### Next Steps for Contributors
 
 1. Review `app.py` to understand the application flow
 2. Check `chainlit.toml` for available features
-3. Explore LangChain documentation for RAG patterns
-4. Consider implementing TODO items in `app.py` (PDF support, voice integration)
+3. Explore LlamaIndex documentation for RAG patterns
+4. Review `assistants/healthcare/` as an example assistant implementation
+5. Consider implementing TODO items (PDF support, voice integration)
 

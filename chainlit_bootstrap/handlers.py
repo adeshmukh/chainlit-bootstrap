@@ -1,18 +1,17 @@
 """Chainlit event handlers."""
 
+import logging
 import random
+import uuid
 
-from langchain_classic.chains import ConversationalRetrievalChain
-from langchain_classic.memory import ConversationBufferMemory
-from langchain_community.chat_message_histories import ChatMessageHistory
-from langchain_community.vectorstores import Chroma
-
-from .compat import ensure_langchain_compat
-
-ensure_langchain_compat()
+import chromadb
+from llama_index.core import Document, VectorStoreIndex
+from llama_index.core.memory import ChatMemoryBuffer
+from llama_index.vector_stores.chroma import ChromaVectorStore
 
 import chainlit as cl
 
+from .assistants import AssistantDescriptor, discover_assistants
 from .charts import histogram_from_values
 from .llm import embeddings, llm, text_splitter
 from .search import (
@@ -21,10 +20,15 @@ from .search import (
     run_web_search,
 )
 
+logger = logging.getLogger(__name__)
+
+# Initialize assistant registry at module level
+_assistant_registry = discover_assistants()
+
 
 async def _process_file(file: cl.File) -> bool:
     """
-    Process an uploaded file and set up the chain.
+    Process an uploaded file and set up the vector store index.
 
     Currently only text files are supported. PDF support requires additional libraries like pypdf.
     Returns True if successful.
@@ -51,44 +55,38 @@ async def _process_file(file: cl.File) -> bool:
         ).send()
         return False
 
-    texts = text_splitter.split_text(text)
-    metadatas = [{"source": f"{i}-pl"} for i in range(len(texts))]
+    # Create LlamaIndex Document
+    document = Document(text=text, metadata={"source": file.name})
 
-    docsearch = await cl.make_async(Chroma.from_texts)(
-        texts, embeddings, metadatas=metadatas
-    )
+    # Create ChromaDB collection for this session
+    chroma_client = chromadb.Client()
+    collection_name = f"session_{uuid.uuid4().hex[:8]}"
+    chroma_collection = chroma_client.get_or_create_collection(name=collection_name)
 
-    message_history = ChatMessageHistory()
-    memory = ConversationBufferMemory(
-        memory_key="chat_history",
-        output_key="answer",
-        chat_memory=message_history,
-        return_messages=True,
-    )
-
-    chain = ConversationalRetrievalChain.from_llm(
-        llm,
-        chain_type="stuff",
-        retriever=docsearch.as_retriever(),
-        memory=memory,
-        return_source_documents=True,
+    # Create vector store and index
+    vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
+    index = VectorStoreIndex.from_documents(
+        [document],
+        vector_store=vector_store,
+        embed_model=embeddings,
+        transformations=[text_splitter],
     )
 
     msg.content = f"Processing `{file.name}` done. You can now ask questions!"
     await msg.update()
 
-    cl.user_session.set("chain", chain)
+    cl.user_session.set("index", index)
     cl.user_session.set("file_name", file.name)
     return True
 
 
-def _get_general_history() -> ChatMessageHistory:
-    """Return or initialize the general chat history for the session."""
-    history: ChatMessageHistory | None = cl.user_session.get("general_history")
-    if history is None:
-        history = ChatMessageHistory()
-        cl.user_session.set("general_history", history)
-    return history
+def _get_general_memory() -> ChatMemoryBuffer:
+    """Return or initialize the general chat memory for the session."""
+    memory: ChatMemoryBuffer | None = cl.user_session.get("general_memory")
+    if memory is None:
+        memory = ChatMemoryBuffer.from_defaults(token_limit=3000)
+        cl.user_session.set("general_memory", memory)
+    return memory
 
 
 async def _respond_with_general_chat(user_input: str) -> None:
@@ -99,15 +97,64 @@ async def _respond_with_general_chat(user_input: str) -> None:
         ).send()
         return
 
-    history = _get_general_history()
-    history.add_user_message(user_input)
+    memory = _get_general_memory()
+    
+    # Create a simple chat engine with memory
+    from llama_index.core.chat_engine import SimpleChatEngine
+    
+    chat_engine = SimpleChatEngine.from_defaults(
+        llm=llm,
+        memory=memory,
+    )
+    
+    # Stream the response
+    response = cl.Message(content="")
+    await response.send()
+    
+    full_response = ""
+    async for token in chat_engine.astream_chat(user_input):
+        full_response += token.delta
+        response.content = full_response
+        await response.update()
 
-    cb = cl.AsyncLangchainCallbackHandler()
-    response = await llm.ainvoke(history.messages, callbacks=[cb])
 
-    history.add_ai_message(response.content)
-
-    await cl.Message(content=response.content).send()
+def _parse_assistant_command(user_input: str) -> tuple[str | None, str]:
+    """
+    Parse assistant-related commands from user input.
+    
+    Returns:
+        Tuple of (command_type, remainder) where:
+        - command_type: "list", "switch", "direct", or None
+        - remainder: remaining text after command
+    """
+    if not user_input:
+        return None, ""
+    
+    trimmed = user_input.strip()
+    lower_trimmed = trimmed.lower()
+    
+    # /assistant list
+    if lower_trimmed == "/assistant list" or lower_trimmed.startswith("/assistant list "):
+        return "list", ""
+    
+    # /assistant <name>
+    if lower_trimmed.startswith("/assistant "):
+        parts = trimmed.split(maxsplit=2)
+        if len(parts) >= 2:
+            assistant_name = parts[1]
+            return "switch", assistant_name
+        return "switch", ""
+    
+    # /<command> <message> - direct assistant command
+    if trimmed.startswith("/"):
+        parts = trimmed.split(maxsplit=1)
+        command = parts[0][1:]  # Remove leading /
+        assistant = _assistant_registry.get(command)
+        if assistant:
+            remainder = parts[1] if len(parts) > 1 else ""
+            return "direct", f"{command} {remainder}".strip()
+    
+    return None, trimmed
 
 
 def _extract_search_query(user_input: str) -> str | None:
@@ -234,18 +281,38 @@ async def on_chat_start():
         # Database will be initialized when actually needed
         pass
 
-    chain = cl.user_session.get("chain")
-    if chain:
+    index = cl.user_session.get("index")
+    if index:
         file_name = cl.user_session.get("file_name", "document")
         await cl.Message(
             content=f"👋 Welcome back! You can continue asking questions about `{file_name}`."
         ).send()
         return
 
+    # Set default assistant (first registered or None)
+    assistants = _assistant_registry.list_all()
+    if assistants:
+        default_assistant = assistants[0]
+        cl.user_session.set("active_assistant", default_assistant.command)
+    else:
+        cl.user_session.set("active_assistant", None)
+
     welcome_message = (
         "👋 Welcome! You can start chatting right away or optionally upload a text file (📎) "
         "if you want me to answer questions about that document."
     )
+    
+    # Add assistant information
+    if assistants:
+        assistant_list = "\n".join(
+            f"- `/{a.command}`: {a.name} - {a.description}" for a in assistants
+        )
+        welcome_message += (
+            f"\n\n**Available Assistants:**\n{assistant_list}\n\n"
+            "Use `/assistant <name>` to switch assistants, or `/<command> <message>` "
+            "to use a specific assistant directly."
+        )
+    
     if is_web_search_configured():
         welcome_message += (
             "\n\nNeed the latest info? Type `/search your question` to run a live Tavily web search."
@@ -281,6 +348,63 @@ async def main(message: cl.Message):
 
     user_content = message.content or ""
 
+    # Handle assistant commands
+    cmd_type, cmd_remainder = _parse_assistant_command(user_content)
+    
+    if cmd_type == "list":
+        assistants = _assistant_registry.list_all()
+        if assistants:
+            assistant_list = "\n".join(
+                f"- `/{a.command}`: **{a.name}** - {a.description}"
+                for a in assistants
+            )
+            await cl.Message(
+                content=f"**Available Assistants:**\n\n{assistant_list}"
+            ).send()
+        else:
+            await cl.Message(content="No assistants are currently registered.").send()
+        return
+    
+    if cmd_type == "switch":
+        if not cmd_remainder:
+            await cl.Message(
+                content="Please specify an assistant name. Use `/assistant list` to see available assistants."
+            ).send()
+            return
+        
+        assistant = _assistant_registry.get(cmd_remainder)
+        if assistant:
+            cl.user_session.set("active_assistant", assistant.command)
+            await cl.Message(
+                content=f"✅ Switched to **{assistant.name}**. {assistant.description}"
+            ).send()
+        else:
+            await cl.Message(
+                content=f"❌ Assistant '{cmd_remainder}' not found. Use `/assistant list` to see available assistants."
+            ).send()
+        return
+    
+    if cmd_type == "direct":
+        # Extract command and message
+        parts = cmd_remainder.split(maxsplit=1)
+        command = parts[0]
+        assistant_message = parts[1] if len(parts) > 1 else ""
+        
+        assistant = _assistant_registry.get(command)
+        if assistant:
+            # Build session context
+            context = {
+                "user_id": cl.user_session.get("id", "unknown"),
+                "file_name": cl.user_session.get("file_name"),
+                "index": cl.user_session.get("index"),
+            }
+            
+            # Call assistant handler
+            response = await assistant.handle_message(assistant_message, context)
+            await cl.Message(content=response).send()
+            return
+
+    # Handle shared commands (search, chart) - these work regardless of assistant
     raw_search_query = _extract_search_query(user_content or "")
     if raw_search_query is not None:
         await _respond_with_web_search(raw_search_query)
@@ -291,30 +415,75 @@ async def main(message: cl.Message):
         await _respond_with_demo_chart(chart_sample_size)
         return
 
-    chain: ConversationalRetrievalChain | None = cl.user_session.get("chain")
-    if not chain:
+    # Check if active assistant is set and route to it
+    active_assistant_cmd = cl.user_session.get("active_assistant")
+    if active_assistant_cmd:
+        assistant = _assistant_registry.get(active_assistant_cmd)
+        if assistant:
+            # Build session context
+            context = {
+                "user_id": cl.user_session.get("id", "unknown"),
+                "file_name": cl.user_session.get("file_name"),
+                "index": cl.user_session.get("index"),
+            }
+            
+            # Call assistant handler
+            response = await assistant.handle_message(user_content, context)
+            await cl.Message(content=response).send()
+            return
+
+    # Handle document QA if index exists
+    index: VectorStoreIndex | None = cl.user_session.get("index")
+    if not index:
         await _respond_with_general_chat(user_content)
         return
 
-    cb = cl.AsyncLangchainCallbackHandler()
-    res = await chain.acall(user_content, callbacks=[cb])
+    # Get or create chat engine with memory
+    chat_engine_key = "chat_engine"
+    chat_engine = cl.user_session.get(chat_engine_key)
+    if chat_engine is None:
+        memory = ChatMemoryBuffer.from_defaults(token_limit=3000)
+        chat_engine = index.as_chat_engine(
+            llm=llm,
+            memory=memory,
+            similarity_top_k=3,
+            streaming=True,
+        )
+        cl.user_session.set(chat_engine_key, chat_engine)
 
-    answer = res["answer"]
-    source_documents = res["source_documents"]
+    # Stream the response
+    response = cl.Message(content="")
+    await response.send()
+    
+    full_response = ""
     text_elements: list[cl.Text] = []
-
-    if source_documents:
-        for source_idx, source_doc in enumerate(source_documents):
-            source_name = f"source_{source_idx}"
-            text_elements.append(
-                cl.Text(
-                    content=source_doc.page_content, name=source_name, display="side"
-                )
-            )
+    
+    async for token in chat_engine.astream_chat(user_content):
+        if token.delta:
+            full_response += token.delta
+            response.content = full_response
+            await response.update()
+        
+        # Extract source nodes if available
+        if hasattr(token, "source_nodes") and token.source_nodes:
+            for source_idx, node in enumerate(token.source_nodes):
+                source_name = f"source_{source_idx}"
+                if not any(el.name == source_name for el in text_elements):
+                    text_elements.append(
+                        cl.Text(
+                            content=node.text,
+                            name=source_name,
+                            display="side",
+                        )
+                    )
+    
+    # Update response with source elements
+    if text_elements:
         source_names = [text_el.name for text_el in text_elements]
-        answer += f"\nSources: {', '.join(source_names)}" if source_names else "\nNo sources found"
-
-    await cl.Message(content=answer, elements=text_elements).send()
+        full_response += f"\nSources: {', '.join(source_names)}"
+        response.content = full_response
+        response.elements = text_elements
+        await response.update()
 
 
 @cl.on_audio_chunk
