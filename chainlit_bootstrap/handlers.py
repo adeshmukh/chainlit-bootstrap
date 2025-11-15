@@ -268,6 +268,16 @@ async def _respond_with_web_search(query: str) -> None:
 @cl.on_chat_start
 async def on_chat_start():
     """Initialize chat session and ensure database is initialized."""
+    # Force enable audio feature (workaround for Chainlit config bug)
+    try:
+        import chainlit.config as cfg
+        if hasattr(cfg.config, 'features') and hasattr(cfg.config.features, 'audio'):
+            if not cfg.config.features.audio.enabled:
+                cfg.config.features.audio.enabled = True
+                logger.info("Audio feature force-enabled in on_chat_start")
+    except Exception as e:
+        logger.warning(f"Could not enable audio in on_chat_start: {e}")
+    
     # Trigger database initialization to ensure tables exist before Chainlit queries them
     try:
         data_layer = cl.data_layer
@@ -494,9 +504,16 @@ async def on_audio_chunk(audio_chunk):
     TODO: Implement OpenAI Realtime API integration.
     Currently a placeholder that acknowledges audio input.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Audio chunk received: isStart={getattr(audio_chunk, 'isStart', None)}, isEnd={getattr(audio_chunk, 'isEnd', None)}")
+    
     if hasattr(audio_chunk, "isStart") and audio_chunk.isStart:
         await cl.Message(content="🎤 Listening...").send()
     elif hasattr(audio_chunk, "isEnd") and audio_chunk.isEnd:
         await cl.Message(
             content="Voice input received. Full OpenAI Realtime API integration coming soon!"
         ).send()
+    else:
+        # Handle intermediate chunks
+        pass

@@ -33,6 +33,7 @@ The microphone feature requires HTTPS. Follow these steps for a repeatable HTTPS
    This will:
    - Check for locally installed `mkcert` (install it first if missing)
    - Add `chainlit.local.ai` to `/etc/hosts` (if not already present)
+   - **WSL users**: Also add to Windows hosts file (script will prompt with instructions)
    - Install mkcert root CA for trusted local certificates (requires sudo)
    - Generate SSL certificates in `.certs/` directory
 
@@ -93,6 +94,7 @@ TAVILY_API_KEY=tvly-...         # Optional: enables `/search` web lookups
 - Verify certificates exist: `ls -la .certs/`
 - Check browser console for permission errors
 - Ensure `/etc/hosts` contains `127.0.0.1 chainlit.local.ai`
+- **WSL users**: Also ensure Windows hosts file (`C:\Windows\System32\drivers\etc\hosts`) contains the entry, as browsers on Windows bypass Linux `/etc/hosts`
 
 #### Certificate errors
 

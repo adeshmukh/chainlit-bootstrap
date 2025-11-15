@@ -28,6 +28,28 @@ else
     fi
 fi
 
+# Step 1b: Check and update Windows hosts file (for WSL)
+WINDOWS_HOSTS="/mnt/c/Windows/System32/drivers/etc/hosts"
+if [ -f "$WINDOWS_HOSTS" ]; then
+    echo ""
+    echo "📝 Checking Windows hosts file for $HOSTNAME..."
+    if grep -qi "$HOSTNAME" "$WINDOWS_HOSTS" 2>/dev/null; then
+        echo "✓ $HOSTNAME already exists in Windows hosts file"
+    else
+        echo "⚠ Windows hosts file found but requires manual editing (admin privileges needed)"
+        echo "  Please add this line to: $WINDOWS_HOSTS"
+        echo "    127.0.0.1 $HOSTNAME"
+        echo ""
+        echo "  You can edit it by running in PowerShell (as Administrator):"
+        echo "    notepad C:\\Windows\\System32\\drivers\\etc\\hosts"
+        echo ""
+        echo "  Or use this command in PowerShell (as Administrator):"
+        echo "    Add-Content -Path C:\\Windows\\System32\\drivers\\etc\\hosts -Value \"127.0.0.1 $HOSTNAME\""
+        echo ""
+        echo "  ⚠ IMPORTANT: Browsers on Windows will not resolve $HOSTNAME until this is added!"
+    fi
+fi
+
 # Step 2: Create certs directory
 echo ""
 echo "📁 Creating certificates directory..."
