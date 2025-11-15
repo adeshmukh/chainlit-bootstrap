@@ -30,13 +30,6 @@
   - Enables semantic search over uploaded documents
   - Metadata tracking for source attribution
 
-### PII Security
-- **presidio-analyzer** (>=2.2.0): Detects PII in text
-- **presidio-anonymizer** (>=2.2.0): Anonymizes detected PII
-- **spacy** (>=3.7.0): NLP library used by Presidio
-  - English model: `en_core_web_sm` (downloaded during Docker build)
-- Controlled by `ENABLE_PRESIDIO_PII_CLEANING` (disabled by default; set to `1` to enable)
-
 ### Database
 - **SQLAlchemy** (>=2.0.0): ORM for database operations
 - **aiosqlite** (>=0.19.0): Async SQLite driver
@@ -75,13 +68,13 @@ Embedding Generation (OpenAI)
     ↓
 Vector Store Creation (ChromaDB)
     ↓
-User Query → PII Anonymization
+User Query
     ↓
 Retrieval from Vector Store
     ↓
 RAG Chain (LangChain)
     ↓
-LLM Response → PII Anonymization
+LLM Response
     ↓
 Stream Response to User
 ```
@@ -92,14 +85,13 @@ Stream Response to User
    - File upload → Text extraction → Chunking → Embedding → Vector storage
 
 2. **Query Processing Pipeline**
-   - User input → PII detection/anonymization → Vector retrieval → RAG → Response anonymization → Streaming output
+   - User input → Vector retrieval → RAG → Streaming output
 
 3. **Session Management**
    - Persistent sessions stored in SQLite
    - Conversation history maintained via LangChain memory
 
 4. **Security Layer**
-   - PII detection on both input and output
    - Google OAuth authentication (can be bypassed in dev mode via `CHAINLIT_NO_LOGIN`)
 
 ## Developer Quickstart
@@ -132,13 +124,7 @@ Stream Response to User
    # Or manually: uv pip install --python .venv/bin/python <dependencies>
    ```
 
-4. **Download spaCy model** (required for Presidio)
-   ```bash
-   source .venv/bin/activate  # or: .venv/bin/activate
-   python -m spacy download en_core_web_sm
-   ```
-
-5. **Set environment variables**
+4. **Set environment variables**
    ```bash
    export OPENAI_API_KEY="your-api-key-here"
    # Optional:
@@ -148,7 +134,7 @@ Stream Response to User
    export CHAINLIT_NO_LOGIN=1
    ```
 
-6. **Run the application**
+5. **Run the application**
    ```bash
    chainlit run app.py
    ```
@@ -261,11 +247,6 @@ TAVILY_API_KEY=tvly-...         # Optional: enables `/search` web lookups
 
 ### Troubleshooting
 
-#### Issue: spaCy model not found
-```bash
-python -m spacy download en_core_web_sm
-```
-
 #### Issue: Port already in use
 ```bash
 export CHAINLIT_PORT=8001
@@ -286,6 +267,5 @@ export CHAINLIT_PORT=8001
 1. Review `app.py` to understand the application flow
 2. Check `chainlit.toml` for available features
 3. Explore LangChain documentation for RAG patterns
-4. Review Presidio documentation for PII detection customization
-5. Consider implementing TODO items in `app.py` (PDF support, voice integration)
+4. Consider implementing TODO items in `app.py` (PDF support, voice integration)
 

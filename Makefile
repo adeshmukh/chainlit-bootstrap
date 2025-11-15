@@ -1,4 +1,4 @@
-.PHONY: help venv install sync lint format fix test build rebuild up down dev clean download-spacy-model
+.PHONY: help venv install sync lint format fix test build rebuild up down dev clean
 
 UV_PYTHON := .venv/bin/python
 
@@ -17,7 +17,6 @@ help:
 	@echo "  up         - Start services with docker-compose"
 	@echo "  down       - Stop services"
 	@echo "  dev        - Start dev container with hot reload"
-	@echo "  download-spacy-model - Download spaCy model wheel for Docker caching"
 	@echo "  clean      - Clean build artifacts and caches"
 
 # Create virtual environment if it doesn't exist
@@ -56,13 +55,10 @@ test: install
 	uv run pytest tests/ -v || echo "No tests directory found. Create tests/ directory to add tests."
 
 # Build Docker image
-# Ensure .local/cache/spacy-models/ exists so Docker COPY doesn't fail
 build:
-	@mkdir -p .local/cache/spacy-models
 	@docker-compose build
 
 rebuild:
-	@mkdir -p .local/cache/spacy-models
 	@docker-compose build --no-cache --pull
 
 # Start services
@@ -86,19 +82,6 @@ dev:
 	@docker rm -f chainlit-app 2>/dev/null || true
 	@echo "Starting dev container..."
 	docker-compose up
-
-# Download spaCy model wheel for Docker caching
-# Ensures directory exists for Docker COPY to work even if download fails
-download-spacy-model:
-	@echo "Downloading spaCy model wheel to .local/cache/spacy-models/..."
-	@mkdir -p .local/cache/spacy-models
-	@if command -v python3 >/dev/null 2>&1; then \
-		python3 scripts/download-spacy-model.py || \
-		(echo "Warning: Could not download model wheel. Docker will download during build." && exit 1); \
-	else \
-		echo "Error: python3 not found. Cannot download model wheel." && exit 1; \
-	fi
-	@echo "Model wheel cached at .local/cache/spacy-models/"
 
 # Clean build artifacts
 clean:

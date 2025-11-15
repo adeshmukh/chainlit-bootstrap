@@ -1,4 +1,4 @@
-"""Chainlit starter application with voice input, document QA, and PII security."""
+"""Chainlit starter application with voice input and document QA."""
 
 __version__ = "0.1.0"
 

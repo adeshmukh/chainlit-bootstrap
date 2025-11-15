@@ -15,7 +15,6 @@ import chainlit as cl
 
 from .charts import histogram_from_values
 from .llm import embeddings, llm, text_splitter
-from .pii import anonymize_text
 from .search import (
     TavilyNotConfiguredError,
     is_web_search_configured,
@@ -106,10 +105,9 @@ async def _respond_with_general_chat(user_input: str) -> None:
     cb = cl.AsyncLangchainCallbackHandler()
     response = await llm.ainvoke(history.messages, callbacks=[cb])
 
-    sanitized_answer = anonymize_text(response.content)
-    history.add_ai_message(sanitized_answer)
+    history.add_ai_message(response.content)
 
-    await cl.Message(content=sanitized_answer).send()
+    await cl.Message(content=response.content).send()
 
 
 def _extract_search_query(user_input: str) -> str | None:
@@ -207,13 +205,12 @@ async def _respond_with_web_search(query: str) -> None:
         title = result.get("title") or "Untitled result"
         url = result.get("url") or ""
         snippet = result.get("content") or result.get("snippet") or ""
-        sanitized_snippet = anonymize_text(snippet) if snippet else ""
         if url:
             formatted_results.append(
-                f"{idx}. **[{title}]({url})**\n{sanitized_snippet}".strip()
+                f"{idx}. **[{title}]({url})**\n{snippet}".strip()
             )
         else:
-            formatted_results.append(f"{idx}. **{title}**\n{sanitized_snippet}".strip())
+            formatted_results.append(f"{idx}. **{title}**\n{snippet}".strip())
 
     progress.content = "🔎 **Web search results:**\n\n" + "\n\n".join(
         formatted_results
@@ -262,7 +259,7 @@ async def on_chat_start():
 
 @cl.on_message
 async def main(message: cl.Message):
-    """Handle incoming messages with PII detection and document QA."""
+    """Handle incoming messages and document QA."""
     # Handle file uploads if present
     if message.elements:
         for element in message.elements:
@@ -283,7 +280,6 @@ async def main(message: cl.Message):
                 break
 
     user_content = message.content or ""
-    sanitized_input = anonymize_text(user_content) if user_content else ""
 
     raw_search_query = _extract_search_query(user_content or "")
     if raw_search_query is not None:
@@ -297,13 +293,13 @@ async def main(message: cl.Message):
 
     chain: ConversationalRetrievalChain | None = cl.user_session.get("chain")
     if not chain:
-        await _respond_with_general_chat(sanitized_input)
+        await _respond_with_general_chat(user_content)
         return
 
     cb = cl.AsyncLangchainCallbackHandler()
-    res = await chain.acall(sanitized_input, callbacks=[cb])
+    res = await chain.acall(user_content, callbacks=[cb])
 
-    sanitized_answer = anonymize_text(res["answer"])
+    answer = res["answer"]
     source_documents = res["source_documents"]
     text_elements: list[cl.Text] = []
 
@@ -316,9 +312,9 @@ async def main(message: cl.Message):
                 )
             )
         source_names = [text_el.name for text_el in text_elements]
-        sanitized_answer += f"\nSources: {', '.join(source_names)}" if source_names else "\nNo sources found"
+        answer += f"\nSources: {', '.join(source_names)}" if source_names else "\nNo sources found"
 
-    await cl.Message(content=sanitized_answer, elements=text_elements).send()
+    await cl.Message(content=answer, elements=text_elements).send()
 
 
 @cl.on_audio_chunk

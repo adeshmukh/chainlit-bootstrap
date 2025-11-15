@@ -21,16 +21,6 @@ COPY pyproject.toml ./
 # Install everything declared in pyproject.toml to stay in sync automatically
 RUN uv pip install --system .
 
-# Install spaCy model: use cached wheel if available, otherwise download
-# Copy installation script and cached model wheel directory (if it exists)
-# Directory is ensured to exist by Makefile build target
-COPY scripts/install-spacy-model.sh /tmp/install-spacy-model.sh
-# Copy directory contents - will copy nothing if directory is empty or doesn't exist
-# Using COPY with directory path - works even if empty (in BuildKit) or use wildcard pattern
-COPY .local/cache/spacy-models/ /tmp/spacy-models/
-RUN chmod +x /tmp/install-spacy-model.sh && \
-    /tmp/install-spacy-model.sh
-
 # Copy application code
 COPY . .
 

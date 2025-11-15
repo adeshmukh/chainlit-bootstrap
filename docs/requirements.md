@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project is a Chainlit-based conversational AI application that enables users to upload documents and ask questions about them. The application includes features for document question-answering, PII (Personally Identifiable Information) detection and anonymization, and voice input capabilities.
+This project is a Chainlit-based conversational AI application that enables users to upload documents and ask questions about them. The application includes features for document question-answering and voice input capabilities.
 
 ## Core Features
 
@@ -18,16 +18,7 @@ This project is a Chainlit-based conversational AI application that enables user
   - Only supports plain text files (`.txt`)
   - PDF support mentioned but not yet implemented (requires additional libraries like `pypdf`)
 
-### 2. PII Detection and Anonymization
-- **Status**: ✅ Implemented
-- **Description**: Automatically detects and anonymizes personally identifiable information in both user inputs and AI responses
-- **Implementation**:
-  - Uses Microsoft Presidio (`presidio-analyzer` and `presidio-anonymizer`)
-  - spaCy English model (`en_core_web_sm`) for NLP processing
-  - Applied to both user queries and AI-generated answers
-- **Purpose**: Ensures privacy and security by preventing PII from being exposed in conversations
-
-### 3. Voice Input
+### 2. Voice Input
 - **Status**: 🚧 Partially Implemented
 - **Description**: Support for real-time voice input using microphone
 - **Current State**:
@@ -38,7 +29,7 @@ This project is a Chainlit-based conversational AI application that enables user
   - Integrate OpenAI Realtime API for speech-to-text
   - Implement audio transcription and streaming responses
 
-### 4. Authentication
+### 3. Authentication
 - **Status**: ✅ Configured
 - **Description**: Google OAuth authentication enabled (can be bypassed in dev mode)
 - **Configuration**: 
@@ -51,7 +42,7 @@ This project is a Chainlit-based conversational AI application that enables user
   - Useful for development and automated testing
   - When enabled, authentication is disabled in `chainlit.toml` and OAuth setup is skipped
 
-### 5. File Upload
+### 4. File Upload
 - **Status**: ✅ Implemented
 - **Description**: Users can upload files with messages
 - **Configuration**:
@@ -60,19 +51,18 @@ This project is a Chainlit-based conversational AI application that enables user
   - Maximum 10 MB per file
   - Document upload required at chat start (20 MB limit)
 
-### 6. Persistent Sessions
+### 5. Persistent Sessions
 - **Status**: ✅ Enabled
 - **Description**: Users can create and switch between different conversation threads
 - **Storage**: SQLite database with aiosqlite
 
-### 7. Web Search
+### 6. Web Search
 - **Status**: ✅ Implemented
 - **Description**: Live Tavily-powered web search for up-to-date answers outside uploaded documents
 - **Usage**: Users can type `/search your question` (or `search: your question`) to fetch the latest information
 - **Implementation**:
   - `tavily-python` client
-  - Sanitized snippets returned as a formatted message
-- **Privacy Note**: `/search` queries are sent to Tavily exactly as typed; remind users not to include sensitive data when performing external lookups
+  - Snippets returned as a formatted message
 - **Current Limitations**:
   - Requires a valid `TAVILY_API_KEY`
   - Commands must be prefixed (general chat won't automatically call the search tool)
@@ -104,12 +94,10 @@ This project is a Chainlit-based conversational AI application that enables user
 1. Add PDF parsing support using `pypdf` or similar libraries
 2. Complete OpenAI Realtime API integration for voice input
 3. Support for additional LLM providers (Anthropic, Cohere, etc.)
-4. Enhanced PII detection with custom entity types
-5. Multi-language support for PII detection
-6. Document metadata extraction and indexing
-7. Support for multiple document uploads in a single session
-8. Export conversation history
-9. Advanced retrieval strategies (hybrid search, reranking)
+4. Document metadata extraction and indexing
+5. Support for multiple document uploads in a single session
+6. Export conversation history
+7. Advanced retrieval strategies (hybrid search, reranking)
 
 ## Project State
 

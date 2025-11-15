@@ -57,7 +57,7 @@ name = "Chainlit Starter App"
 show_prompt_playground = true
 
 # Description of the app and chatbot. This is used for HTML tags.
-description = "A Chainlit starter application with voice input, document QA, and PII security"
+description = "A Chainlit starter application with voice input and document QA"
 
 # Large size content are by default collapsed for a cleaner ui
 default_collapse_content = true
