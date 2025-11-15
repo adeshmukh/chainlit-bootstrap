@@ -241,3 +241,4 @@ storage/
 *.tfstate.*
 *.tfvars
 *.tfvars.json
+.files/
