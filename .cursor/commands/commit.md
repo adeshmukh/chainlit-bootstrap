@@ -4,15 +4,16 @@ Create a git commit that captures staged & unstaged changes with a clear, descri
 
 ## Pre-flight Checks
 
-1. **Verify staged changes exist:**
-   - If no staged changes are detected, inform the user and do NOT proceed
+1. **Verifychanges exist:**
+   - If no staged/uncommitted/untracked changes are detected, inform the user and do NOT proceed
+   - If untracked changes are present, list up to 5 of these to keep the user informed
 
 2. **Check repository state:**
    - Ensure no merge conflicts exist before proceeding
 
 ## Creating the Commit Message
 
-1. **Analyze staged changes:**
+1. **Analyze changes:**
    - Review what was modified to understand the scope and type of changes
    - Categorize changes (feature, bugfix, refactor, docs, test, etc.)
 
