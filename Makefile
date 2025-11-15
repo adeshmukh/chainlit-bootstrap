@@ -1,4 +1,4 @@
-.PHONY: help venv install sync lint format fix test build up down dev clean download-spacy-model
+.PHONY: help venv install sync lint format fix test build rebuild up down dev clean download-spacy-model
 
 # Default target
 help:
@@ -10,7 +10,8 @@ help:
 	@echo "  format     - Format code with ruff (requires install)"
 	@echo "  fix        - Auto-fix linting issues (requires install)"
 	@echo "  test       - Run tests (requires install)"
-	@echo "  build      - Build Docker image"
+	@echo "  build      - Build Docker image (uses cache)"
+	@echo "  rebuild    - Build Docker image without cache"
 	@echo "  up         - Start services with docker-compose"
 	@echo "  down       - Stop services"
 	@echo "  dev        - Start dev container with hot reload"
@@ -72,6 +73,10 @@ test: install
 build:
 	@mkdir -p .local/cache/spacy-models
 	@docker-compose build
+
+rebuild:
+	@mkdir -p .local/cache/spacy-models
+	@docker-compose build --no-cache --pull
 
 # Start services
 # Clean up any existing containers first to avoid ContainerConfig errors
