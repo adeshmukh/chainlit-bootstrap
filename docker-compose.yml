@@ -13,6 +13,8 @@ services:
       - .:/app
       # Persist database
       - chainlit_db:/app/data
+      # Mount certificates for TLS (if available)
+      - ./.certs:/certs:ro
     env_file:
       - .env
     environment:

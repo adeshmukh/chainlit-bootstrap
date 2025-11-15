@@ -1,4 +1,4 @@
-.PHONY: help venv install sync lint format fix test build rebuild up down dev clean
+.PHONY: help venv install sync lint format fix test build rebuild up down dev clean init-dev dev-https
 
 UV_PYTHON := .venv/bin/python
 
@@ -17,6 +17,8 @@ help:
 	@echo "  up         - Start services with docker-compose"
 	@echo "  down       - Stop services"
 	@echo "  dev        - Start dev container with hot reload"
+	@echo "  init-dev   - One-time HTTPS dev setup (hosts entry + certificates)"
+	@echo "  dev-https  - Start dev container with HTTPS (requires init-dev)"
 	@echo "  clean      - Clean build artifacts and caches"
 
 # Create virtual environment if it doesn't exist
@@ -82,6 +84,24 @@ dev:
 	@docker rm -f chainlit-app 2>/dev/null || true
 	@echo "Starting dev container..."
 	docker-compose up
+
+# One-time HTTPS development setup
+# Sets up /etc/hosts entry and generates SSL certificates
+init-dev:
+	@bash scripts/one_time_setup.sh
+
+# Start dev container with HTTPS (requires init-dev to be run first)
+# Clean up any existing containers first to avoid ContainerConfig errors
+dev-https:
+	@if [ ! -f ".certs/chainlit-dev.crt" ] || [ ! -f ".certs/chainlit-dev.key" ]; then \
+		echo "❌ Certificates not found. Please run 'make init-dev' first."; \
+		exit 1; \
+	fi
+	@echo "Cleaning up any existing containers..."
+	@docker-compose down 2>/dev/null || true
+	@docker rm -f chainlit-app chainlit-proxy 2>/dev/null || true
+	@echo "Starting dev container with HTTPS..."
+	docker-compose -f docker-compose.yml -f docker-compose.https.yml up
 
 # Clean build artifacts
 clean:

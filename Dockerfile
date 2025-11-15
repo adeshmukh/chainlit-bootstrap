@@ -27,12 +27,20 @@ COPY . .
 # Expose Chainlit port
 EXPOSE 8000
 
+# TLS configuration (build args)
+ARG ENABLE_TLS=false
+ARG TLS_CERT=/certs/chainlit-dev.crt
+ARG TLS_KEY=/certs/chainlit-dev.key
+
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV CHAINLIT_HOST=0.0.0.0
 ENV CHAINLIT_PORT=8000
 ENV PIP_ROOT_USER_ACTION=ignore
+ENV ENABLE_TLS=${ENABLE_TLS}
+ENV TLS_CERT=${TLS_CERT}
+ENV TLS_KEY=${TLS_KEY}
 
-# Run Chainlit application
-CMD ["chainlit", "run", "app.py", "--host", "0.0.0.0", "--port", "8000"]
+# Run Chainlit application with conditional TLS support
+CMD ["sh", "-c", "if [ \"$ENABLE_TLS\" = \"true\" ] && [ -f \"$TLS_CERT\" ] && [ -f \"$TLS_KEY\" ]; then chainlit run app.py --host 0.0.0.0 --port 8000 --ssl-certfile $TLS_CERT --ssl-keyfile $TLS_KEY; else chainlit run app.py --host 0.0.0.0 --port 8000; fi"]
 

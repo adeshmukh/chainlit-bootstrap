@@ -232,6 +232,9 @@ chroma/
 data/
 storage/
 
+# Development certificates
+.certs/
+
 # Docker volumes
 *.log
 
