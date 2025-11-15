@@ -5,7 +5,6 @@ import os
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-# Environment variables for LLM configuration
 # Currently only OpenAI is supported
 DEFAULT_GAI_MODEL = os.getenv("DEFAULT_GAI_MODEL", "gpt-4o-mini")
 

@@ -19,7 +19,7 @@ try:
 
     # Initialize Presidio analyzer with the configured NLP engine
     analyzer = AnalyzerEngine(nlp_engine=nlp_engine)
-except (OSError, Exception) as e:
+except Exception as e:
     # Fallback: if model is not found or configuration fails,
     # let Presidio handle it (should not happen if Docker build installed correctly)
     print(f"Warning: Could not configure Presidio with en_core_web_sm: {e}")
