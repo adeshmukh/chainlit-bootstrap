@@ -1,6 +1,6 @@
 # Create Git Commit
 
-Create a git commit that captures staged changes with a clear, descriptive commit message.
+Create a git commit that captures staged & unstaged changes with a clear, descriptive commit message.
 
 ## Pre-flight Checks
 

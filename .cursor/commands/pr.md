@@ -26,6 +26,7 @@ Create a GitHub pull request from the current branch to the `main` branch.
 2. **Create the PR:**
    - Use the `gh` CLI to create the pull request targeting `main` branch
    - PR title should be a concise summary (ask user or infer from branch name)
+   - Prefix the PR title with a Conventional Commits tag such as `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`, `perf:`, `ci:`, `build:`, or `style:`
    - PR description should follow the template structure
 
 3. **Handle failures:**

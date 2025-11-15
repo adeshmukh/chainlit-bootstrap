@@ -1,6 +1,7 @@
 """Chainlit application entry point."""
 
 import logging
+import os
 import re
 from pathlib import Path
 
@@ -21,8 +22,16 @@ def configure_logging():
     """
     Configure logging to suppress DEBUG level messages, especially react-devtools noise.
     """
-    # Set root logger to INFO level to suppress DEBUG messages
-    logging.basicConfig(level=logging.INFO)
+    log_level_name = os.getenv("LOG_LEVEL", "INFO").upper()
+    level = getattr(logging, log_level_name, None)
+    if level is None or not isinstance(level, int):
+        print(
+            f"WARNING: Unknown LOG_LEVEL '{log_level_name}'. "
+            "Defaulting to INFO."
+        )
+        level = logging.INFO
+
+    logging.basicConfig(level=level, force=True)
 
     spam_filter = SuppressReactDevtoolsFilter()
     logging.getLogger().addFilter(spam_filter)
