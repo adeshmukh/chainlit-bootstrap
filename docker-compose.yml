@@ -20,6 +20,9 @@ services:
       - CHAINLIT_PORT=8000
       # Suppress DEBUG level logs
       - LOG_LEVEL=INFO
+      # Explicitly unset DEBUG to prevent Chainlit CLI from enabling debug mode
+      # (some .env files set DEBUG=true for other tools)
+      - DEBUG=
       # Google OAuth credentials (can be overridden via .env file)
       - OAUTH_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID:-}
       - OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET:-}
