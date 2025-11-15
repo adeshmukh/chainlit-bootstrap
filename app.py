@@ -7,16 +7,35 @@ from pathlib import Path
 from chainlit_bootstrap.auth import is_no_login_mode
 
 
+class SuppressReactDevtoolsFilter(logging.Filter):
+    """Drop noisy react-devtools websocket messages from logs."""
+
+    noisy_tokens = ("window_message", '"react-devtools')
+
+    def filter(self, record):
+        msg = record.getMessage()
+        return not any(token in msg for token in self.noisy_tokens)
+
+
 def configure_logging():
     """
     Configure logging to suppress DEBUG level messages, especially react-devtools noise.
     """
     # Set root logger to INFO level to suppress DEBUG messages
     logging.basicConfig(level=logging.INFO)
-    
+
+    spam_filter = SuppressReactDevtoolsFilter()
+    logging.getLogger().addFilter(spam_filter)
+
     # Specifically suppress DEBUG logs from socketio/websocket libraries
-    logging.getLogger("socketio").setLevel(logging.WARNING)
-    logging.getLogger("engineio").setLevel(logging.WARNING)
+    socketio_logger = logging.getLogger("socketio")
+    socketio_logger.setLevel(logging.WARNING)
+    socketio_logger.addFilter(spam_filter)
+
+    engineio_logger = logging.getLogger("engineio")
+    engineio_logger.setLevel(logging.WARNING)
+    engineio_logger.addFilter(spam_filter)
+
     logging.getLogger("uvicorn").setLevel(logging.INFO)
     logging.getLogger("uvicorn.access").setLevel(logging.INFO)
 
