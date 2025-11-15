@@ -464,6 +464,7 @@ dependencies = [
     { name = "sqlalchemy" },
     { name = "tavily-python" },
     { name = "tiktoken" },
+    { name = "typing-extensions" },
 ]
 
 [package.optional-dependencies]
@@ -494,6 +495,7 @@ requires-dist = [
     { name = "sqlalchemy", specifier = ">=2.0.44" },
     { name = "tavily-python", specifier = ">=0.3.8" },
     { name = "tiktoken", specifier = ">=0.12.0" },
+    { name = "typing-extensions", specifier = ">=4.12.0" },
 ]
 provides-extras = ["dev"]
 

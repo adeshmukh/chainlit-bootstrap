@@ -18,23 +18,8 @@ RUN pip install --no-cache-dir --root-user-action=ignore uv
 COPY pyproject.toml ./
 
 # Install Python dependencies using uv
-# Install all dependencies listed in pyproject.toml
-RUN uv pip install --system \
-    chainlit \
-    chromadb \
-    presidio-analyzer \
-    presidio-anonymizer \
-    spacy \
-    openai \
-    sqlalchemy \
-    aiosqlite \
-    asyncpg \
-    langchain \
-    langchain-classic \
-    langchain-community \
-    langchain-openai \
-    langchain-text-splitters \
-    tiktoken
+# Install everything declared in pyproject.toml to stay in sync automatically
+RUN uv pip sync --system pyproject.toml
 
 # Install spaCy model: use cached wheel if available, otherwise download
 # Copy installation script and cached model wheel directory (if it exists)
